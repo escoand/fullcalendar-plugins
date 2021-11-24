@@ -1,6 +1,9 @@
 export default {
+  // date range
   dateAlignment: "year",
   duration: { years: 1 },
+
+  // content
   content: (args) => {
     const today = new Date();
     const options = calendar.getCurrentData().options;
@@ -120,7 +123,7 @@ export default {
                 bg.appendChild(document.createTextNode(event.def.title));
               }
 
-              // <normal event
+              // normal event
               else {
                 const evt = cell.appendChild(document.createElement("div"));
                 evt.classList.add(
@@ -140,10 +143,14 @@ export default {
                 div.classList.add("fc-event-main");
                 div.appendChild(document.createElement("a"));
                 div.appendChild(document.createTextNode(event.def.title));
-                const meta = div.appendChild(document.createElement("span"));
-                meta.classList.add("location");
-                if (!event.def.allDay)
-                  meta.appendChild(
+                const meta = div.appendChild(document.createElement("div"));
+                meta.classList.add("fc-event-meta");
+
+                // event time
+                if (!event.def.allDay) {
+                  const time = meta.appendChild(document.createElement("div"));
+                  time.classList.add("fc-event-time");
+                  time.appendChild(
                     document.createTextNode(
                       event.instance.range.start.toLocaleTimeString(
                         options.locale || navigator.language,
@@ -151,10 +158,18 @@ export default {
                       )
                     )
                   );
-                if (event.def.extendedProps.location)
-                  meta.appendChild(
+                }
+
+                // event location
+                if (event.def.extendedProps.location) {
+                  const location = meta.appendChild(
+                    document.createElement("div")
+                  );
+                  location.classList.add("fc-event-location");
+                  location.appendChild(
                     document.createTextNode(event.def.extendedProps.location)
                   );
+                }
               }
             });
         }

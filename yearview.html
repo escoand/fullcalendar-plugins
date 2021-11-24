@@ -9,6 +9,8 @@
     <style>
       .fc-yearView-view .fc-scrollgrid {
         border-collapse: collapse;
+        min-width: 100%;
+        width: auto;
       }
       .fc-yearView-view .fc-day {
         border-right: none;
@@ -25,9 +27,18 @@
         border-left: none;
         position: relative;
       }
-      .fc-yearView-view .fc-scrollgrid {
-        min-width: 100%;
-        width: auto;
+      .fc-yearView-view .fc-event-meta {
+        font-style: italic;
+        float: right;
+      }
+      .fc-yearView-view .fc-event-meta::after {
+        clear: both;
+        content: "";
+        display: block;
+      }
+      .fc-yearView-view .fc-event-time,
+      .fc-yearView-view .fc-event-location {
+        display: inline;
       }
     </style>
   </head>
@@ -39,6 +50,11 @@
         {
           initialView: "yearView",
           views: { yearView: FullCalendar.YearView },
+          eventTimeFormat: {
+            hour: "2-digit",
+            minute: "2-digit",
+            meridiem: false,
+          },
           events: [
             {
               title: "event1",
@@ -51,7 +67,13 @@
             },
             {
               title: "event3",
-              start: new Date().getFullYear() + "-02-07T14:00:00Z",
+              start: new Date().getFullYear() + "-02-01T14:00:00Z",
+              allDay: false,
+              location: "my location",
+            },
+            {
+              title: "event4",
+              start: new Date().getFullYear() + "-02-07",
               display: "background",
             },
           ],
