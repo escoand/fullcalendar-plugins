@@ -1,0 +1,63 @@
+<html>
+  <head>
+    <link
+      href="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/main.min.css"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/main.min.js"></script>
+    <script src="dist/yearview.js"></script>
+    <style>
+      .fc-yearView-view .fc-scrollgrid {
+        border-collapse: collapse;
+      }
+      .fc-yearView-view .fc-day {
+        border-right: none;
+        position: relative;
+        text-align: center;
+      }
+      .fc-yearView-view .fc-day-weekend {
+        color: red;
+      }
+      .fc-yearView-view .fc-day-empty {
+        border: none;
+      }
+      .fc-yearView-view .fc-events {
+        border-left: none;
+        position: relative;
+      }
+      .fc-yearView-view .fc-scrollgrid {
+        min-width: 100%;
+        width: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="calendar"></div>
+    <script>
+      const calendar = new FullCalendar.Calendar(
+        document.getElementById("calendar"),
+        {
+          initialView: "yearView",
+          views: { yearView: FullCalendar.YearView },
+          events: [
+            {
+              title: "event1",
+              start: new Date().getFullYear() + "-01-02",
+            },
+            {
+              title: "event2",
+              start: new Date().getFullYear() + "-01-05",
+              end: new Date().getFullYear() + "-01-10",
+            },
+            {
+              title: "event3",
+              start: new Date().getFullYear() + "-02-07T14:00:00Z",
+              display: "background",
+            },
+          ],
+        }
+      );
+      calendar.render();
+    </script>
+  </body>
+</html>
