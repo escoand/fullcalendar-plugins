@@ -1,21 +1,36 @@
 import { babel } from "@rollup/plugin-babel";
-import { terser } from "rollup-plugin-terser";
 import serve from "rollup-plugin-serve";
+import { terser } from "rollup-plugin-terser";
 
-export default {
-  input: "src/yearview.js",
-  output: {
-    compact: true,
-    dir: "dist/",
-    format: "iife",
-    name: "FullCalendar.YearView",
-    sourcemap: true,
+const plugins = [
+  babel({
+    presets: ["@babel/preset-env"],
+  }),
+  terser(),
+  serve({ open: true }),
+];
+
+export default [
+  {
+    input: "src/caldav.js",
+    output: {
+      compact: true,
+      dir: "dist/",
+      format: "iife",
+      name: "FullCalendar.CalDavSource",
+      sourcemap: true,
+    },
+    plugins: plugins,
   },
-  plugins: [
-    babel({
-      presets: ["@babel/preset-env"],
-    }),
-    terser(),
-    serve({ open: true }),
-  ],
-};
+  {
+    input: "src/yearview.js",
+    output: {
+      compact: true,
+      dir: "dist/",
+      format: "iife",
+      name: "FullCalendar.YearView",
+      sourcemap: true,
+    },
+    plugins: plugins,
+  },
+];
