@@ -6,7 +6,7 @@ export default {
   // content
   content: (args) => {
     const today = new Date();
-    const options = calendar.getCurrentData().options;
+    const options = calendar?.getCurrentData()?.options || {};
     const end = args.dateProfile.renderRange.end;
     const evtInstances = Object.values(args.eventStore.instances);
     const table = document.createElement("table");
@@ -153,8 +153,8 @@ export default {
                   time.appendChild(
                     document.createTextNode(
                       event.instance.range.start.toLocaleTimeString(
-                        options.locale || navigator.language,
-                        options.eventTimeFormat?.standardDateProps || {}
+                        options?.locale || navigator.language,
+                        options?.eventTimeFormat?.standardDateProps || {}
                       )
                     )
                   );
