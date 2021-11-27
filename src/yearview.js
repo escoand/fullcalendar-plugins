@@ -1,3 +1,5 @@
+import "core-js/stable";
+
 export default {
   // date range
   dateAlignment: "year",

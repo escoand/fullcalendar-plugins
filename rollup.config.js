@@ -1,10 +1,24 @@
 import { babel } from "@rollup/plugin-babel";
+import commonjs from "@rollup/plugin-commonjs";
 import serve from "rollup-plugin-serve";
 import { terser } from "rollup-plugin-terser";
+import { nodeResolve } from "@rollup/plugin-node-resolve";
 
 const plugins = [
+  nodeResolve(),
+  commonjs(),
   babel({
-    presets: ["@babel/preset-env"],
+    exclude: [/\/core-js\//],
+    presets: [
+      [
+        "@babel/preset-env",
+        {
+          corejs: "3.19",
+          modules: false,
+          useBuiltIns: "usage",
+        },
+      ],
+    ],
   }),
   terser(),
   serve({ open: true }),

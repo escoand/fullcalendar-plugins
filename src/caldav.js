@@ -1,3 +1,5 @@
+import "core-js/stable";
+
 // ical helpers
 const padNumber = (number, length = 2) => ("000000000" + number).slice(-length);
 const icalDate = (date) => {
@@ -46,9 +48,9 @@ const parseIcal = (ical, start, end) => {
   const jcal = ICAL.parse(ical);
   const comp = new ICAL.Component(jcal);
   return comp.getAllSubcomponents("vevent").flatMap((item) => {
+    const result = [];
     const event = new ICAL.Event(item);
     if (event.isRecurring()) {
-      const result = [];
       const _start = new ICAL.Time().fromJSDate(start);
       const _end = new ICAL.Time().fromJSDate(end);
       const iter = event.iterator();
@@ -59,31 +61,48 @@ const parseIcal = (ical, start, end) => {
           result.push(createEvent(occ.item, occ.startDate, occ.endDate));
         }
       }
-      return result;
     } else if (!event.isRecurrenceException()) {
-      return [createEvent(event)];
-    } else {
-      return [];
+      result.push(createEvent(event));
     }
+    return result;
   });
 };
 
 export default (url, props = {}) => {
   return Object.assign(props, {
     events: (fetchInfo, successCallback, failureCallback) => {
+      const caldavNS = "urn:ietf:params:xml:ns:caldav";
+
+      // create caldav request
+      const doc = document.implementation.createDocument(
+        caldavNS,
+        "cd:calendar-query"
+      );
+      doc.documentElement
+        .appendChild(doc.createElementNS("DAV:", "prop"))
+        .appendChild(doc.createElement("cd:calendar-data"));
+      const vcal = doc.documentElement
+        .appendChild(doc.createElement("cd:filter"))
+        .appendChild(doc.createElement("cd:comp-filter"));
+      vcal.setAttribute("name", "VCALENDAR");
+      const vevt = vcal.appendChild(doc.createElement("cd:comp-filter"));
+      vevt.setAttribute("name", "VEVENT");
+      const range = vevt.appendChild(doc.createElement("cd:time-range"));
+      range.setAttribute("start", icalDate(fetchInfo.start));
+      range.setAttribute("end", icalDate(fetchInfo.end));
+      const xml = new XMLSerializer().serializeToString(doc);
+
+      // do request
       const xhr = new XMLHttpRequest();
       xhr.open("REPORT", url);
       xhr.onload = () => {
         if (xhr.status >= 200 && xhr.status < 400) {
           const parser = new DOMParser();
           const xml = parser.parseFromString(xhr.response, "text/xml");
-          const items = xml.getElementsByTagName("cal:calendar-data");
-          const events = [];
-          for (let i = 0; i < items.length; i++) {
-            events.push(
-              ...parseIcal(items[i].innerHTML, fetchInfo.start, fetchInfo.end)
-            );
-          }
+          const items = xml.getElementsByTagNameNS(caldavNS, "calendar-data");
+          const events = Array.from(items).flatMap((item) =>
+            parseIcal(item.innerHTML, fetchInfo.start, fetchInfo.end)
+          );
           successCallback(events);
         } else {
           failureCallback("failed to fetch", xhr);
@@ -91,27 +110,7 @@ export default (url, props = {}) => {
       };
       xhr.onerror = () => failureCallback("failed to fetch", xhr);
       xhr.setRequestHeader("Depth", "1");
-      xhr.send(
-        '<?xml version="1.0" encoding="utf-8" ?>' +
-          '<x1:calendar-query xmlns:x1="urn:ietf:params:xml:ns:caldav">' +
-          '<x0:prop xmlns:x0="DAV:">' +
-          "<x1:calendar-data/>" +
-          "</x0:prop>" +
-          "<x1:filter>" +
-          '<x1:comp-filter name="VCALENDAR">' +
-          '<x1:comp-filter name="VEVENT">' +
-          "<x1:time-range " +
-          'start="' +
-          icalDate(fetchInfo.start) +
-          '" ' +
-          'end="' +
-          icalDate(fetchInfo.end) +
-          '"/>' +
-          "</x1:comp-filter>" +
-          "</x1:comp-filter>" +
-          "</x1:filter>" +
-          "</x1:calendar-query>"
-      );
+      xhr.send(xml);
     },
   });
 };
