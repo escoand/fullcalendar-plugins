@@ -8,22 +8,11 @@ export default {
   // content
   content: (args) => {
     const today = new Date();
+    const events = calendar?.getEvents() || [];
     const options = calendar?.getCurrentData()?.options || {};
     const end = args.dateProfile.renderRange.end;
-    const evtInstances = Object.values(args.eventStore.instances);
     const table = document.createElement("table");
     table.classList.add("fc-scrollgrid");
-
-    // find events
-    const events = [];
-    for (let i = 0; i < evtInstances.length; i++) {
-      const src = args.eventUiBases[evtInstances[i].defId];
-      events.push({
-        instance: evtInstances[i],
-        def: args.eventStore.defs[evtInstances[i].defId],
-        src: src,
-      });
-    }
 
     // loop days
     for (let date = -1; date <= 37; date++) {
@@ -100,60 +89,63 @@ export default {
           events
             .filter(
               (event) =>
-                event.instance.range.start < nextDay &&
-                event.instance.range.end >= thisDay &&
-                (event.def.allDay === false ||
-                  event.instance.range.end > nextDay)
+                event.start < nextDay &&
+                event.end >= thisDay &&
+                (event.allDay === false || event.end > nextDay)
             )
             .map((event) => {
+              // event element
+              const elem = document.createElement("div");
+              elem.style.backgroundColor =
+                event.backgroundColor ||
+                event.source.internalEventSource.ui.backgroundColor;
+              elem.style.borderColor =
+                event.borderColor ||
+                event.source.internalEventSource.ui.borderColor;
+              elem.style.textColor =
+                event.textColor ||
+                event.source.internalEventSource.ui.textColor;
+
               // background event
               if (
-                [event.def.ui.display, event.src.display].includes("background")
+                [
+                  event.display,
+                  event.source.internalEventSource.ui.display,
+                ].includes("background")
               ) {
                 if (hasBg) return;
                 hasBg = true;
-                let bg = day.appendChild(document.createElement("div"));
-                bg.classList.add("fc-bg-event");
-                bg.style.backgroundColor =
-                  event.def.ui.backgroundColor || event.src.backgroundColor;
-                bg.style.borderColor =
-                  event.def.ui.borderColor || event.src.borderColor;
-                bg.style.textColor =
-                  event.def.ui.textColor || event.src.textColor;
-                bg = cell.appendChild(bg.cloneNode(true));
-                bg.appendChild(document.createTextNode(event.def.title));
+                day.appendChild(elem);
+                elem.classList.add("fc-bg-event");
+                cell
+                  .appendChild(elem.cloneNode(true))
+                  .appendChild(document.createTextNode(event.title));
               }
 
               // normal event
               else {
-                const evt = cell.appendChild(document.createElement("div"));
-                evt.classList.add(
+                cell.appendChild(elem);
+                elem.classList.add(
                   "fc-daygrid-event",
                   "fc-h-event",
                   "fc-event",
-                  ...event.def.ui.classNames,
-                  ...event.src.classNames
+                  ...event.classNames,
+                  ...event.source.internalEventSource.ui.classNames
                 );
-                evt.style.backgroundColor =
-                  event.def.ui.backgroundColor || event.src.backgroundColor;
-                evt.style.borderColor =
-                  event.def.ui.borderColor || event.src.borderColor;
-                evt.style.textColor =
-                  event.def.ui.textColor || event.src.textColor;
-                const div = evt.appendChild(document.createElement("div"));
+                const div = elem.appendChild(document.createElement("div"));
                 div.classList.add("fc-event-main");
                 div.appendChild(document.createElement("a"));
-                div.appendChild(document.createTextNode(event.def.title));
+                div.appendChild(document.createTextNode(event.title));
                 const meta = div.appendChild(document.createElement("div"));
                 meta.classList.add("fc-event-meta");
 
                 // event time
-                if (!event.def.allDay) {
+                if (!event.allDay) {
                   const time = meta.appendChild(document.createElement("div"));
                   time.classList.add("fc-event-time");
                   time.appendChild(
                     document.createTextNode(
-                      event.instance.range.start.toLocaleTimeString(
+                      event.start.toLocaleTimeString(
                         options?.locale || navigator.language,
                         options?.eventTimeFormat?.standardDateProps || {}
                       )
@@ -162,13 +154,13 @@ export default {
                 }
 
                 // event location
-                if (event.def.extendedProps.location) {
+                if (event.extendedProps.location) {
                   const location = meta.appendChild(
                     document.createElement("div")
                   );
                   location.classList.add("fc-event-location");
                   location.appendChild(
-                    document.createTextNode(event.def.extendedProps.location)
+                    document.createTextNode(event.extendedProps.location)
                   );
                 }
               }
