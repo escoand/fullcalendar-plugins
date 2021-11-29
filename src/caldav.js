@@ -68,49 +68,47 @@ const parseIcal = (ical, start, end) => {
   });
 };
 
-export default (url, props = {}) => {
-  return Object.assign(props, {
-    events: (fetchInfo, successCallback, failureCallback) => {
-      const caldavNS = "urn:ietf:params:xml:ns:caldav";
+export default (url) => {
+  return (fetchInfo, successCallback, failureCallback) => {
+    const caldavNS = "urn:ietf:params:xml:ns:caldav";
 
-      // create caldav request
-      const doc = document.implementation.createDocument(
-        caldavNS,
-        "cd:calendar-query"
-      );
-      doc.documentElement
-        .appendChild(doc.createElementNS("DAV:", "prop"))
-        .appendChild(doc.createElement("cd:calendar-data"));
-      const vcal = doc.documentElement
-        .appendChild(doc.createElement("cd:filter"))
-        .appendChild(doc.createElement("cd:comp-filter"));
-      vcal.setAttribute("name", "VCALENDAR");
-      const vevt = vcal.appendChild(doc.createElement("cd:comp-filter"));
-      vevt.setAttribute("name", "VEVENT");
-      const range = vevt.appendChild(doc.createElement("cd:time-range"));
-      range.setAttribute("start", icalDate(fetchInfo.start));
-      range.setAttribute("end", icalDate(fetchInfo.end));
-      const xml = new XMLSerializer().serializeToString(doc);
+    // create caldav request
+    const doc = document.implementation.createDocument(
+      caldavNS,
+      "cd:calendar-query"
+    );
+    doc.documentElement
+      .appendChild(doc.createElementNS("DAV:", "prop"))
+      .appendChild(doc.createElement("cd:calendar-data"));
+    const vcal = doc.documentElement
+      .appendChild(doc.createElement("cd:filter"))
+      .appendChild(doc.createElement("cd:comp-filter"));
+    vcal.setAttribute("name", "VCALENDAR");
+    const vevt = vcal.appendChild(doc.createElement("cd:comp-filter"));
+    vevt.setAttribute("name", "VEVENT");
+    const range = vevt.appendChild(doc.createElement("cd:time-range"));
+    range.setAttribute("start", icalDate(fetchInfo.start));
+    range.setAttribute("end", icalDate(fetchInfo.end));
+    const xml = new XMLSerializer().serializeToString(doc);
 
-      // do request
-      const xhr = new XMLHttpRequest();
-      xhr.open("REPORT", url);
-      xhr.onload = () => {
-        if (xhr.status >= 200 && xhr.status < 400) {
-          const parser = new DOMParser();
-          const xml = parser.parseFromString(xhr.response, "text/xml");
-          const items = xml.getElementsByTagNameNS(caldavNS, "calendar-data");
-          const events = Array.from(items).flatMap((item) =>
-            parseIcal(item.innerHTML, fetchInfo.start, fetchInfo.end)
-          );
-          successCallback(events);
-        } else {
-          failureCallback("failed to fetch", xhr);
-        }
-      };
-      xhr.onerror = () => failureCallback("failed to fetch", xhr);
-      xhr.setRequestHeader("Depth", "1");
-      xhr.send(xml);
-    },
-  });
+    // do request
+    const xhr = new XMLHttpRequest();
+    xhr.open("REPORT", url);
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 400) {
+        const parser = new DOMParser();
+        const xml = parser.parseFromString(xhr.response, "text/xml");
+        const items = xml.getElementsByTagNameNS(caldavNS, "calendar-data");
+        const events = Array.from(items).flatMap((item) =>
+          parseIcal(item.innerHTML, fetchInfo.start, fetchInfo.end)
+        );
+        successCallback(events);
+      } else {
+        failureCallback("failed to fetch", xhr);
+      }
+    };
+    xhr.onerror = () => failureCallback("failed to fetch", xhr);
+    xhr.setRequestHeader("Depth", "1");
+    xhr.send(xml);
+  };
 };

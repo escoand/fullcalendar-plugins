@@ -71,13 +71,10 @@ export default {
         // real day
         else {
           let hasBg = false;
-          const dayStart = new Date(real.valueOf());
-          dayStart.setHours(0);
-          dayStart.setMinutes(0);
-          dayStart.setSeconds(0);
-          dayStart.setMilliseconds(0);
-          const dayEnd = new Date(dayStart.valueOf());
-          dayEnd.setDate(dayEnd.getDate() + 1);
+          const thisDay = new Date(real.valueOf());
+          thisDay.setHours(0, 0, 0, 0);
+          const nextDay = new Date(thisDay.valueOf());
+          nextDay.setDate(nextDay.getDate() + 1);
           const classes = ["fc-day"];
           if ([0, 6].includes(real.getDay())) classes.push("fc-day-weekend");
           if (
@@ -103,8 +100,10 @@ export default {
           events
             .filter(
               (event) =>
-                event.instance.range.start.getTime() >= dayStart.getTime() &&
-                event.instance.range.start.getTime() < dayEnd.getTime()
+                event.instance.range.start < nextDay &&
+                event.instance.range.end >= thisDay &&
+                (event.def.allDay === false ||
+                  event.instance.range.end > nextDay)
             )
             .map((event) => {
               // background event

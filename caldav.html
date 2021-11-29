@@ -45,9 +45,12 @@
               loadCount > 0 ? "block" : "none";
           },
           eventSources: [
-            FullCalendar.CalDavSource("https://example.com/some-calendar", {
+            {
               color: "red",
-            }),
+              events: FullCalendar.CalDavSource(
+                "https://example.com/some-calendar"
+              ),
+            },
           ],
         }
       );

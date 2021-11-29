@@ -1,11 +1,11 @@
 import { babel } from "@rollup/plugin-babel";
 import commonjs from "@rollup/plugin-commonjs";
+import resolve from "@rollup/plugin-node-resolve";
 import serve from "rollup-plugin-serve";
 import { terser } from "rollup-plugin-terser";
-import { nodeResolve } from "@rollup/plugin-node-resolve";
 
 const plugins = [
-  nodeResolve(),
+  resolve(),
   commonjs(),
   babel({
     exclude: [/\/core-js\//],
@@ -21,7 +21,8 @@ const plugins = [
     ],
   }),
   terser(),
-  serve({ open: true }),
+  // http server if watch mode
+  process.env.ROLLUP_WATCH && serve({ open: true }),
 ];
 
 export default [
