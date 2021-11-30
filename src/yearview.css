@@ -31,5 +31,9 @@
   padding: 1px 2px;
 }
 .fc-yearview .fc-event-time {
+  display: inline;
   margin-right: 3px;
+}
+.fc-yearview .fc-event-location {
+  display: inline;
 }
