@@ -1,6 +1,7 @@
 import { babel } from "@rollup/plugin-babel";
 import commonjs from "@rollup/plugin-commonjs";
 import resolve from "@rollup/plugin-node-resolve";
+import css from "rollup-plugin-css-porter";
 import serve from "rollup-plugin-serve";
 import { terser } from "rollup-plugin-terser";
 
@@ -8,6 +9,7 @@ const plugins = [
   resolve(),
   commonjs(),
   babel({
+    babelHelpers: "bundled",
     exclude: [/\/core-js\//],
     presets: [
       [
@@ -46,6 +48,8 @@ export default [
       name: "FullCalendar.YearView",
       sourcemap: true,
     },
-    plugins: plugins,
+    plugins: plugins.concat([
+      css({ minified: "dist/yearview.css", raw: false }),
+    ]),
   },
 ];

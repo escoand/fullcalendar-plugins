@@ -1,16 +1,18 @@
 import "core-js/stable";
+import "./yearview.css";
 
 export default {
-  // date range
+  // static values
   dateAlignment: "year",
   duration: { years: 1 },
+  viewClassNames: ["fc-yearview"],
 
   // content
   content: (args) => {
+    const context = calendar.getCurrentData();
+    const view = context.viewApi;
+    const events = calendar.getEvents();
     const today = new Date();
-    const events = calendar?.getEvents() || [];
-    const options = calendar?.getCurrentData()?.options || {};
-    const end = args.dateProfile.renderRange.end;
     const table = document.createElement("table");
     table.classList.add("fc-scrollgrid");
 
@@ -22,7 +24,7 @@ export default {
       else row = table.appendChild(document.createElement("tr"));
       const month = new Date(args.dateProfile.renderRange.start.valueOf());
       month.setDate(1);
-      while (month.getTime() < end.getTime()) {
+      while (month.getTime() < args.dateProfile.renderRange.end.getTime()) {
         // offset of month
         const offset = (month.getDay() + 6) % 7;
         const real = new Date(month.valueOf());
@@ -43,11 +45,7 @@ export default {
             .appendChild(document.createElement("div"))
             .appendChild(document.createElement("a"));
           link.classList.add("fc-col-header-cell-cushion");
-          link.appendChild(
-            document.createTextNode(
-              month.toLocaleString("de", { month: "long" })
-            )
-          );
+          link.append(month.toLocaleString("de", { month: "long" }));
         }
 
         // month offset
@@ -59,39 +57,51 @@ export default {
 
         // real day
         else {
-          let hasBg = false;
           const thisDay = new Date(real.valueOf());
           thisDay.setHours(0, 0, 0, 0);
           const nextDay = new Date(thisDay.valueOf());
           nextDay.setDate(nextDay.getDate() + 1);
-          const classes = ["fc-day"];
-          if ([0, 6].includes(real.getDay())) classes.push("fc-day-weekend");
+          const classes = [
+            "fc-day-" +
+              thisDay
+                .toLocaleDateString("en", { weekday: "short" })
+                .toLowerCase(),
+          ];
           if (
-            real.toISOString().substr(0, 10) ==
-            today.toISOString().substr(0, 10)
-          )
+            FullCalendar.rangeContainsMarker(
+              { start: thisDay, end: nextDay },
+              today
+            )
+          ) {
             classes.push("fc-day-today");
+          }
 
           // html
           const day = row.appendChild(document.createElement("td"));
-          day.classList.add(...classes);
-          day.appendChild(
-            document.createTextNode(("0" + real.getDate()).slice(-2))
-          );
-          day.appendChild(document.createElement("br"));
-          day.appendChild(
-            document.createTextNode(
-              real.toLocaleString("de", { weekday: "short" })
-            )
+          day.classList.add("fc-day", ...classes);
+          day.append(
+            ("0" + real.getDate()).slice(-2),
+            document.createElement("br"),
+            real.toLocaleString("de", { weekday: "short" })
           );
           const cell = row.appendChild(document.createElement("td"));
-          cell.classList.add("fc-events");
+          cell.classList.add("fc-events", ...classes);
           events
-            .filter(
-              (event) =>
-                event.start < nextDay &&
-                event.end >= thisDay &&
-                (event.allDay === false || event.end > nextDay)
+            .filter((event) =>
+              FullCalendar.rangesIntersect(
+                {
+                  start: event.start,
+                  end:
+                    event.end ||
+                    context.dateEnv.add(
+                      event.start,
+                      event.allDay
+                        ? view.getOption("defaultAllDayEventDuration")
+                        : view.getOption("defaultTimedEventDuration")
+                    ),
+                },
+                { start: thisDay, end: nextDay }
+              )
             )
             .map((event) => {
               // event element
@@ -113,20 +123,15 @@ export default {
                   event.source.internalEventSource.ui.display,
                 ].includes("background")
               ) {
-                if (hasBg) return;
-                hasBg = true;
                 day.appendChild(elem);
                 elem.classList.add("fc-bg-event");
-                cell
-                  .appendChild(elem.cloneNode(true))
-                  .appendChild(document.createTextNode(event.title));
+                cell.appendChild(elem.cloneNode(true)).append(event.title);
               }
 
               // normal event
               else {
                 cell.appendChild(elem);
                 elem.classList.add(
-                  "fc-daygrid-event",
                   "fc-h-event",
                   "fc-event",
                   ...event.classNames,
@@ -134,41 +139,75 @@ export default {
                 );
                 const div = elem.appendChild(document.createElement("div"));
                 div.classList.add("fc-event-main");
-                div.appendChild(document.createElement("a"));
-                div.appendChild(document.createTextNode(event.title));
-                const meta = div.appendChild(document.createElement("div"));
-                meta.classList.add("fc-event-meta");
 
-                // event time
-                if (!event.allDay) {
-                  const time = meta.appendChild(document.createElement("div"));
-                  time.classList.add("fc-event-time");
-                  time.appendChild(
-                    document.createTextNode(
-                      event.start.toLocaleTimeString(
-                        options?.locale || navigator.language,
-                        options?.eventTimeFormat?.standardDateProps || {}
-                      )
-                    )
-                  );
+                // content
+                let content =
+                  context.calendarOptions.eventContent ||
+                  view.getOption("eventContent");
+                if (content instanceof Function) {
+                  content = content({ event: event, view: view });
+                }
+                if (typeof content === "string" || content instanceof String) {
+                  div.append(content);
+                } else if (typeof content === "object" && "html" in content) {
+                  div.innerHTML = content.html;
+                } else if (
+                  typeof content === "object" &&
+                  "domNodes" in content
+                ) {
+                  div.append(...content.domNodes);
+                } else {
+                  console.warn("unexpected eventContent", content);
                 }
 
-                // event location
-                if (event.extendedProps.location) {
-                  const location = meta.appendChild(
-                    document.createElement("div")
-                  );
-                  location.classList.add("fc-event-location");
-                  location.appendChild(
-                    document.createTextNode(event.extendedProps.location)
-                  );
-                }
+                // click event
+                if (event.url) elem.style.cursor = "pointer";
+                elem.addEventListener("click", (ev) =>
+                  context.emitter.trigger("eventClick", {
+                    el: ev.target,
+                    event: event,
+                    jsEvent: ev,
+                    view: view,
+                  })
+                );
               }
             });
         }
         month.setMonth(month.getMonth() + 1);
       }
     }
+
     return { domNodes: [table] };
+  },
+
+  // content of event
+  eventContent: (args) => {
+    const nodes = [];
+    nodes.push(document.createElement("a"));
+    nodes.push(document.createTextNode(args.event.title));
+    const meta = document.createElement("div");
+    meta.classList.add("fc-event-meta");
+    nodes.push(meta);
+
+    // event time
+    if (!args.event.allDay) {
+      const time = meta.appendChild(document.createElement("div"));
+      time.classList.add("fc-event-time");
+      time.append(
+        args.event.start.toLocaleTimeString(
+          args.view.getOption("locale") || navigator.language,
+          args.view.getOption("eventTimeFormat")?.standardDateProps || {}
+        )
+      );
+    }
+
+    // event location
+    if (args.event.extendedProps.location) {
+      const location = meta.appendChild(document.createElement("div"));
+      location.classList.add("fc-event-location");
+      location.append(args.event.extendedProps.location);
+    }
+
+    return { domNodes: nodes };
   },
 };
