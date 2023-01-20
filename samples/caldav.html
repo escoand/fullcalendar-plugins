@@ -1,11 +1,11 @@
 <html>
   <head>
     <link
-      href="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/main.min.css"
+      href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css"
       rel="stylesheet"
     />
-    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/main.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/ical.js@1.4.0/build/ical.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/ical.js@1.5.0/build/ical.min.js"></script>
     <script src="../dist/caldav.js"></script>
     <style>
       #fc-wrapper {
@@ -44,14 +44,9 @@
             document.getElementById("loading").style.display =
               loadCount > 0 ? "block" : "none";
           },
-          eventSources: [
-            {
-              color: "red",
-              events: FullCalendar.CalDavSource(
-                "https://example.com/some-calendar"
-              ),
-            },
-          ],
+          eventSources: FullCalendar.CalDavSource(
+            "https://example.com/some-calendar"
+          ),
         }
       );
       calendar.render();

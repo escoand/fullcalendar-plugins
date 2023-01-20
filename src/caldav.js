@@ -54,12 +54,13 @@ const parseIcal = (ical, start, end) => {
       const _start = new ICAL.Time().fromJSDate(start);
       const _end = new ICAL.Time().fromJSDate(end);
       const iter = event.iterator();
-      let next;
-      while ((next = iter.next()) && next.compare(_end) <= 0) {
+      let next = iter.next();
+      while (next && next.compare(_end) <= 0) {
         if (next.compare(_start) >= 0) {
           const occ = event.getOccurrenceDetails(next);
           result.push(createEvent(occ.item, occ.startDate, occ.endDate));
         }
+        next = iter.next();
       }
     } else if (!event.isRecurrenceException()) {
       result.push(createEvent(event));
@@ -68,47 +69,124 @@ const parseIcal = (ical, start, end) => {
   });
 };
 
-export default (url) => {
-  return (fetchInfo, successCallback, failureCallback) => {
-    const caldavNS = "urn:ietf:params:xml:ns:caldav";
+export default function (url) {
+  const namespaceResolver = (prefix) =>
+    ({
+      a: "http://apple.com/ns/ical/",
+      c: "urn:ietf:params:xml:ns:caldav",
+      d: "DAV:",
+      n: "http://nextcloud.com/ns",
+    }[prefix] || null);
 
-    // create caldav request
-    const doc = document.implementation.createDocument(
-      caldavNS,
-      "cd:calendar-query"
-    );
-    doc.documentElement
-      .appendChild(doc.createElementNS("DAV:", "prop"))
-      .appendChild(doc.createElement("cd:calendar-data"));
-    const vcal = doc.documentElement
-      .appendChild(doc.createElement("cd:filter"))
-      .appendChild(doc.createElement("cd:comp-filter"));
-    vcal.setAttribute("name", "VCALENDAR");
-    const vevt = vcal.appendChild(doc.createElement("cd:comp-filter"));
-    vevt.setAttribute("name", "VEVENT");
-    const range = vevt.appendChild(doc.createElement("cd:time-range"));
-    range.setAttribute("start", icalDate(fetchInfo.start));
-    range.setAttribute("end", icalDate(fetchInfo.end));
-    const xml = new XMLSerializer().serializeToString(doc);
-
-    // do request
+  const xhrRequest = (
+    method,
+    url,
+    headers = [],
+    request,
+    successCallback,
+    failureCallback,
+    doAsync = true
+  ) => {
     const xhr = new XMLHttpRequest();
-    xhr.open("REPORT", url);
-    xhr.onload = () => {
-      if (xhr.status >= 200 && xhr.status < 400) {
-        const parser = new DOMParser();
-        const xml = parser.parseFromString(xhr.response, "text/xml");
-        const items = xml.getElementsByTagNameNS(caldavNS, "calendar-data");
-        const events = Array.from(items).flatMap((item) =>
-          parseIcal(item.innerHTML, fetchInfo.start, fetchInfo.end)
-        );
-        successCallback(events);
-      } else {
-        failureCallback("failed to fetch", xhr);
-      }
-    };
-    xhr.onerror = () => failureCallback("failed to fetch", xhr);
-    xhr.setRequestHeader("Depth", "1");
-    xhr.send(xml);
+    xhr.open(method, url, doAsync);
+    xhr.onload = () =>
+      xhr.status >= 200 && xhr.status < 400
+        ? successCallback(xhr.response)
+        : failureCallback(xhr);
+    xhr.onerror = failureCallback;
+    headers.forEach(([key, value]) => xhr.setRequestHeader(key, value));
+    xhr.send(request);
+    return xhr;
   };
-};
+
+  const data = {
+    // static values
+    editable: false,
+
+    // calendar data
+    events: (fetchInfo, successCallback, failureCallback) => {
+      xhrRequest(
+        "REPORT",
+        url,
+        [["Depth", "1"]],
+        '<calendar-query xmlns="urn:ietf:params:xml:ns:caldav">' +
+          '<prop xmlns="DAV:">' +
+          '<calendar-data xmlns="urn:ietf:params:xml:ns:caldav"/>' +
+          "</prop>" +
+          "<filter>" +
+          '<comp-filter name="VCALENDAR">' +
+          '<comp-filter name="VEVENT">' +
+          '<time-range start="' +
+          icalDate(fetchInfo.start) +
+          '" end="' +
+          icalDate(fetchInfo.end) +
+          '"/>' +
+          "</comp-filter>" +
+          "</comp-filter>" +
+          "</filter>" +
+          "</calendar-query>",
+        (response) => {
+          const parser = new DOMParser();
+          const xml = parser.parseFromString(response, "text/xml");
+          const iter = document.evaluate(
+            "/d:multistatus/d:response/d:propstat/d:prop/c:calendar-data",
+            xml,
+            namespaceResolver,
+            XPathResult.UNORDERED_NODE_ITERATOR_TYPE
+          );
+          const events = [];
+          let next = iter.iterateNext();
+          while (next) {
+            events.push(
+              parseIcal(next.innerHTML, fetchInfo.start, fetchInfo.end)
+            );
+            next = iter.iterateNext();
+          }
+          successCallback(events.flat());
+        },
+        (xhr) => failureCallback("failed to fetch events", xhr)
+      );
+    },
+  };
+
+  // meta data
+  try {
+    xhrRequest(
+      "PROPFIND",
+      url,
+      [["Depth", 0]],
+      '<propfind xmlns="DAV:">' +
+        "<prop>" +
+        // "<displayname/>" +
+        // '<owner-displayname xmlns="http://nextcloud.com/ns"/>' +
+        '<calendar-color xmlns="http://apple.com/ns/ical/"/>' +
+        "</prop>" +
+        "</propfind>",
+      (response) => {
+        const parser = new DOMParser();
+        const xml = parser.parseFromString(response, "text/xml");
+        const stringVal = (xpath) =>
+          document.evaluate(
+            xpath,
+            xml,
+            namespaceResolver,
+            XPathResult.STRING_TYPE
+          );
+        /*const name =
+        stringVal(
+          "/d:multistatus/d:response/d:propstat/d:prop/n:owner-displayname"
+        ) ||
+        stringVal("/d:multistatus/d:response/d:propstat/d:prop/d:displayname");*/
+        const color = stringVal(
+          "/d:multistatus/d:response/d:propstat/d:prop/a:calendar-color"
+        );
+        //data.name = name.stringValue;
+        data.color = color.stringValue;
+      },
+      (xhr) => console.error("failed to fetch meta", xhr),
+      false
+    );
+  } catch {}
+
+  return data;
+}
