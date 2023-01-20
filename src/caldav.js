@@ -128,7 +128,7 @@ export default function (url) {
         (response) => {
           const parser = new DOMParser();
           const xml = parser.parseFromString(response, "text/xml");
-          const iter = document.evaluate(
+          const iter = xml.evaluate(
             "/d:multistatus/d:response/d:propstat/d:prop/c:calendar-data",
             xml,
             namespaceResolver,
@@ -166,12 +166,7 @@ export default function (url) {
         const parser = new DOMParser();
         const xml = parser.parseFromString(response, "text/xml");
         const stringVal = (xpath) =>
-          document.evaluate(
-            xpath,
-            xml,
-            namespaceResolver,
-            XPathResult.STRING_TYPE
-          );
+          xml.evaluate(xpath, xml, namespaceResolver, XPathResult.STRING_TYPE);
         /*const name =
         stringVal(
           "/d:multistatus/d:response/d:propstat/d:prop/n:owner-displayname"
