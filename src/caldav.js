@@ -150,36 +150,46 @@ export default function (url) {
   };
 
   // meta data
-  try {
-    xhrRequest(
-      "PROPFIND",
-      url,
-      [["Depth", 0]],
-      '<propfind xmlns="DAV:">' +
-        "<prop>" +
-        "<displayname/>" +
-        '<owner-displayname xmlns="http://nextcloud.com/ns"/>' +
-        '<calendar-color xmlns="http://apple.com/ns/ical/"/>' +
-        "</prop>" +
-        "</propfind>",
-      (response) => {
-        const parser = new DOMParser();
-        const xml = parser.parseFromString(response, "text/xml");
-        const stringVal = (xpath) =>
-          xml.evaluate(xpath, xml, namespaceResolver, XPathResult.STRING_TYPE);
-        const name = stringVal(
-          "/d:multistatus/d:response/d:propstat/d:prop/d:displayname"
-        );
-        const color = stringVal(
-          "/d:multistatus/d:response/d:propstat/d:prop/a:calendar-color"
-        );
-        data.name = name.stringValue;
-        data.color = color.stringValue;
-      },
-      (xhr) => console.error("failed to fetch meta", xhr),
-      false
-    );
-  } catch {}
+  (async () =>
+    await new Promise((resolve, reject) =>
+      xhrRequest(
+        "PROPFIND",
+        url,
+        [["Depth", 0]],
+        '<propfind xmlns="DAV:">' +
+          "<prop>" +
+          "<displayname/>" +
+          '<owner-displayname xmlns="http://nextcloud.com/ns"/>' +
+          '<calendar-color xmlns="http://apple.com/ns/ical/"/>' +
+          "</prop>" +
+          "</propfind>",
+        (response) => {
+          const parser = new DOMParser();
+          const xml = parser.parseFromString(response, "text/xml");
+          const stringVal = (xpath) =>
+            xml.evaluate(
+              xpath,
+              xml,
+              namespaceResolver,
+              XPathResult.STRING_TYPE
+            );
+          const name = stringVal(
+            "/d:multistatus/d:response/d:propstat/d:prop/d:displayname"
+          );
+          const color = stringVal(
+            "/d:multistatus/d:response/d:propstat/d:prop/a:calendar-color"
+          );
+          data.name = name.stringValue;
+          data.color = color.stringValue;
+          resolve();
+        },
+        (xhr) => {
+          console.error("failed to fetch meta", xhr);
+          reject();
+        },
+        false
+      )
+    ).catch((err) => console.error("failed to fetch meta", err)))();
 
   return data;
 }
