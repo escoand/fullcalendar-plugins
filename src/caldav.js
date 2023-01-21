@@ -167,11 +167,9 @@ export default function (url) {
         const xml = parser.parseFromString(response, "text/xml");
         const stringVal = (xpath) =>
           xml.evaluate(xpath, xml, namespaceResolver, XPathResult.STRING_TYPE);
-        const name =
-        stringVal(
-          "/d:multistatus/d:response/d:propstat/d:prop/n:owner-displayname"
-        ) ||
-        stringVal("/d:multistatus/d:response/d:propstat/d:prop/d:displayname");
+        const name = stringVal(
+          "/d:multistatus/d:response/d:propstat/d:prop/d:displayname"
+        );
         const color = stringVal(
           "/d:multistatus/d:response/d:propstat/d:prop/a:calendar-color"
         );
