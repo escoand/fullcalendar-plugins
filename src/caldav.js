@@ -157,8 +157,8 @@ export default function (url) {
       [["Depth", 0]],
       '<propfind xmlns="DAV:">' +
         "<prop>" +
-        // "<displayname/>" +
-        // '<owner-displayname xmlns="http://nextcloud.com/ns"/>' +
+        "<displayname/>" +
+        '<owner-displayname xmlns="http://nextcloud.com/ns"/>' +
         '<calendar-color xmlns="http://apple.com/ns/ical/"/>' +
         "</prop>" +
         "</propfind>",
@@ -167,15 +167,15 @@ export default function (url) {
         const xml = parser.parseFromString(response, "text/xml");
         const stringVal = (xpath) =>
           xml.evaluate(xpath, xml, namespaceResolver, XPathResult.STRING_TYPE);
-        /*const name =
+        const name =
         stringVal(
           "/d:multistatus/d:response/d:propstat/d:prop/n:owner-displayname"
         ) ||
-        stringVal("/d:multistatus/d:response/d:propstat/d:prop/d:displayname");*/
+        stringVal("/d:multistatus/d:response/d:propstat/d:prop/d:displayname");
         const color = stringVal(
           "/d:multistatus/d:response/d:propstat/d:prop/a:calendar-color"
         );
-        //data.name = name.stringValue;
+        data.name = name.stringValue;
         data.color = color.stringValue;
       },
       (xhr) => console.error("failed to fetch meta", xhr),
