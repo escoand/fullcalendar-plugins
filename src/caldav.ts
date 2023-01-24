@@ -1,5 +1,13 @@
-import { CalendarApi, EventInput, createPlugin } from "@fullcalendar/core";
-import { EventSourceDef } from "@fullcalendar/core/internal";
+import {
+  CalendarApi,
+  EventInput,
+  EventSourceInput,
+  createPlugin,
+} from "@fullcalendar/core";
+import {
+  EventSourceDef,
+  EventSourceRefiners,
+} from "@fullcalendar/core/internal";
 import "core-js/stable";
 import * as ICAL from "ical.js";
 
@@ -125,7 +133,11 @@ const sourceDef: EventSourceDef<CalDavMeta> = {
   },
 };
 
-const initSourceAsync = (cal: CalendarApi, url: string) => {
+const initSourceAsync = (
+  cal: CalendarApi,
+  url: string,
+  custom: EventSourceInput
+) => {
   cal.trigger("loading", true);
   fetch(url, {
     method: "PROPFIND",
@@ -144,17 +156,20 @@ const initSourceAsync = (cal: CalendarApi, url: string) => {
       const stringVal = (xpath: string) =>
         xml.evaluate(xpath, xml, namespaceResolver, XPathResult.STRING_TYPE)
           .stringValue;
-      cal.addEventSource({
-        url,
-        format: "caldav",
-        color: stringVal(
-          "/d:multistatus/d:response/d:propstat/d:prop/a:calendar-color"
-        ),
-        // @ts-expect-error
-        name: stringVal(
-          "/d:multistatus/d:response/d:propstat/d:prop/d:displayname"
-        ),
-      });
+      const source: EventSourceInput = Object.assign(
+        {
+          color: stringVal(
+            "/d:multistatus/d:response/d:propstat/d:prop/a:calendar-color"
+          ),
+          format: "caldav",
+          name: stringVal(
+            "/d:multistatus/d:response/d:propstat/d:prop/d:displayname"
+          ),
+          url,
+        },
+        custom
+      );
+      cal.addEventSource(source);
     })
   );
 };
