@@ -1,8 +1,5 @@
-.fc-yearview table.fc-scrollgrid {
-  border: none;
+.fc-yearview {
   border-collapse: collapse;
-  min-width: 100%;
-  width: auto;
 }
 .fc-yearview .fc-day-empty {
   border: none;
@@ -12,28 +9,32 @@
 }
 .fc-yearview .fc-day {
   border-right: none;
-  padding: 0 2px;
+  font-weight: bold;
+  padding: 2px 0;
   position: relative;
   text-align: center;
 }
 .fc-yearview .fc-bg-event {
+  overflow: hidden;
   z-index: -1;
 }
 .fc-yearview .fc-events {
   border-left: none;
-  padding: 2px;
+  padding: 1px 2px 0 0;
   position: relative;
 }
 .fc-yearview .fc-event {
   border-radius: 3px;
+  display: block;
   font-size: var(--fc-small-font-size, 0.85em);
   margin: 1px 0 2px 0;
+  overflow: hidden;
   padding: 1px 2px;
 }
 .fc-yearview .fc-event-time {
-  display: inline;
+  display: inline-block;
   margin-right: 3px;
 }
 .fc-yearview .fc-event-location {
-  display: inline;
+  display: inline-block;
 }
