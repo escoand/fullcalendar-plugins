@@ -1,0 +1,42 @@
+.fc-multicol {
+  border-collapse: collapse;
+}
+.fc-day-today {
+  background-color: var(--fc-today-bg-color);
+}
+.fc-multicol th {
+  padding: 8px;
+}
+.fc-multicol .fc-day {
+  font-weight: bold;
+  padding: 2px;
+  text-align: center;
+}
+.fc-multicol .fc-bg-event {
+  overflow: hidden;
+  z-index: -1;
+}
+.fc-multicol .fc-multicol-row {
+  position: relative;
+}
+.fc-multicol .fc-events {
+  padding: 2px;
+}
+.fc-multicol .fc-event {
+  border-radius: 3px;
+  display: block;
+  margin: 1px 0 2px 0;
+  overflow: hidden;
+  padding: 1px 2px;
+}
+.fc-multicol .fc-event-meta {
+  float: right;
+}
+.fc-multicol .fc-event-time {
+  display: inline-block;
+  margin-right: 3px;
+  overflow: unset;
+}
+.fc-multicol .fc-event-location {
+  display: inline-block;
+}

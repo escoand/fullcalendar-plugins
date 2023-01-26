@@ -34,6 +34,7 @@
 .fc-yearview .fc-event-time {
   display: inline-block;
   margin-right: 3px;
+  overflow: unset;
 }
 .fc-yearview .fc-event-location {
   display: inline-block;

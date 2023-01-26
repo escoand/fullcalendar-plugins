@@ -43,6 +43,17 @@ export default [
     plugins,
   },
   {
+    input: "src/multicol.ts",
+    output: {
+      compact: true,
+      dir: "dist/",
+      format: "iife",
+      name: "MultiColumnPlugin",
+      sourcemap: true,
+    },
+    plugins,
+  },
+  {
     input: "src/yearview.ts",
     output: {
       compact: true,
