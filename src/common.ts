@@ -1,4 +1,9 @@
-import { CalendarApi, Duration, EventRenderRange } from "@fullcalendar/core";
+import {
+  CalendarApi,
+  Duration,
+  EventRenderRange,
+  FormatterInput,
+} from "@fullcalendar/core";
 import {
   DateProfile,
   DateRange,
@@ -8,14 +13,16 @@ import {
 import { h } from "@fullcalendar/core/preact";
 
 const DEFAULT_DISPLAY_END = false;
-const DEFAULT_DATE_FORMAT = {
+const DEFAULT_MONTH_FORMAT: FormatterInput = {
+  month: "long",
+};
+const DEFAULT_DATE_FORMAT: FormatterInput = {
   day: "2-digit",
+  omitCommas: true,
   weekday: "short",
 };
-const DEFAULT_TIME_FORMAT = {
-  hour: "2-digit",
-  minute: "2-digit",
-  meridiem: false,
+const DEFAULT_TIME_FORMAT: FormatterInput = {
+  timeStyle: "short",
 };
 
 export interface ExtendedViewProps extends ViewProps {
@@ -23,23 +30,49 @@ export interface ExtendedViewProps extends ViewProps {
   nextDayThreshold: Duration;
 }
 
-export interface DayHeaderProps {
+interface BaseProps {
+  children?: [];
+}
+
+export interface DayHeaderCellProps extends BaseProps {
+  class?: string;
   context: ViewContext;
   date: Date;
 }
 
-export interface EventListProps {
+export interface DayHeaderProps {
   context: ViewContext;
+  date: Date;
+}
+export interface EventListProps extends BaseProps {
+  class?: string;
+  context: ViewContext;
+  date: Date;
   events: EventRenderRange[];
   tag?: string;
 }
 
-export interface EventViewProps {
+export interface EventProps {
   context: ViewContext;
   event: EventRenderRange;
 }
+export interface BackgroundEventProps {
+  event?: EventRenderRange;
+}
 
-function formatTime(date: DateRange, calendar: CalendarApi) {
+export function formatMonth(date: Date, calendar: CalendarApi) {
+  return calendar.formatDate(date, DEFAULT_MONTH_FORMAT);
+}
+
+export function formatDate(date: Date, calendar: CalendarApi) {
+  return calendar.formatDate(
+    date,
+    calendar.view.getOption("eventTimeFormat")?.standardDateProps ||
+      DEFAULT_TIME_FORMAT
+  );
+}
+
+export function formatTime(date: DateRange, calendar: CalendarApi) {
   return calendar.view.getOption("displayEventEnd") ??
     calendar.getOption("displayEventEnd") ??
     DEFAULT_DISPLAY_END
@@ -49,11 +82,38 @@ function formatTime(date: DateRange, calendar: CalendarApi) {
         calendar.view.getOption("eventTimeFormat")?.standardDateProps ||
           DEFAULT_TIME_FORMAT
       )
-    : calendar.formatDate(
-        date.start,
-        calendar.view.getOption("eventTimeFormat")?.standardDateProps ||
-          DEFAULT_TIME_FORMAT
-      );
+    : formatDate(date.start, calendar);
+}
+
+function isToday(date: Date) {
+  const today = new Date();
+  return (
+    date.getDate() == today.getDate() &&
+    date.getMonth() == today.getMonth() &&
+    date.getFullYear() == today.getFullYear()
+  );
+}
+
+export function DateHeaderCellComponent(props: DayHeaderCellProps) {
+  const { children, class: clazz, date } = props;
+  const start = new Date(date);
+  start.setUTCHours(0, 0, 0, 0);
+  const end = new Date(start);
+  end.setUTCDate(end.getUTCDate() + 1);
+  return h(
+    "td",
+    {
+      class: [
+        clazz,
+        "fc-day",
+        "fc-day-" +
+          date.toLocaleDateString("en", { weekday: "short" }).toLowerCase(),
+        isToday(start) ? "fc-day-today" : null,
+      ].join(" "),
+    },
+    h(DateHeaderComponent, props),
+    children
+  );
 }
 
 export function DateHeaderComponent(props: DayHeaderProps) {
@@ -69,19 +129,30 @@ export function DateHeaderComponent(props: DayHeaderProps) {
 }
 
 export function EventListCellComponent(props: EventListProps) {
-  const { context, events, tag } = props;
+  const { children, class: clazz, context, date, events, tag } = props;
   return h(
     tag || "td",
-    {},
-    events.map((event) => h(EventComponent, { context, event }))
+    {
+      class: [clazz, "fc-events", isToday(date) ? "fc-day-today" : null].join(
+        " "
+      ),
+    },
+    events.map((event) => h(EventComponent, { context, event })),
+    children
   );
 }
 
-export function BackgroundEventComponent() {
-  return h("div", { class: "fc-bg-event" });
+export function BackgroundEventComponent(props: BackgroundEventProps) {
+  return h("div", {
+    class: "fc-bg-event",
+    style: {
+      backgroundColor:
+        props.event?.ui.backgroundColor || props.event?.def.ui.backgroundColor,
+    },
+  });
 }
 
-export function EventComponent(props: EventViewProps) {
+export function EventComponent(props: EventProps) {
   const { event } = props;
   return h(
     "div",
@@ -103,7 +174,7 @@ export function EventComponent(props: EventViewProps) {
   );
 }
 
-export function EventContentComponent(props: EventViewProps) {
+export function EventContentComponent(props: EventProps) {
   const { context, event } = props;
   return h(
     "div",

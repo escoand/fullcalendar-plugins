@@ -30,38 +30,20 @@ const plugins = [
   process.env.ROLLUP_WATCH && serve({ open: true }),
 ];
 
+const createOutput = (input, name) => ({
+  input,
+  output: {
+    compact: true,
+    dir: "dist/",
+    format: "iife",
+    name,
+    sourcemap: true,
+  },
+  plugins,
+});
+
 export default [
-  {
-    input: "src/caldav.ts",
-    output: {
-      compact: true,
-      dir: "dist/",
-      format: "iife",
-      name: "CalDavPlugin",
-      sourcemap: true,
-    },
-    plugins,
-  },
-  {
-    input: "src/multicol.ts",
-    output: {
-      compact: true,
-      dir: "dist/",
-      format: "iife",
-      name: "MultiColumnPlugin",
-      sourcemap: true,
-    },
-    plugins,
-  },
-  {
-    input: "src/yearview.ts",
-    output: {
-      compact: true,
-      dir: "dist/",
-      format: "iife",
-      name: "YearViewPlugin",
-      sourcemap: true,
-    },
-    plugins,
-  },
+  createOutput("src/caldav.ts", "CalDavPlugin"),
+  createOutput("src/multicol.ts", "MultiColumnPlugin"),
+  createOutput("src/yearview.ts", "YearViewPlugin"),
 ];

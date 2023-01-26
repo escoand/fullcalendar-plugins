@@ -8,11 +8,12 @@ import { ComponentChild, h } from "@fullcalendar/core/preact";
 import "core-js/stable";
 import {
   BackgroundEventComponent,
-  DateHeaderComponent,
+  DateHeaderCellComponent,
   EventListCellComponent,
   ExtendedViewProps,
 } from "./common";
-import { default as css } from "./multicol.css";
+// @ts-expect-error
+import css from "./multicol.css";
 
 class MultiColumnComponent extends BaseComponent {
   render(
@@ -40,7 +41,7 @@ class MultiColumnComponent extends BaseComponent {
 
     // days
     const dayMap = events.reduce((prev, cur) => {
-      const epoc = new Date(cur.range.start).setHours(0, 0, 0, 0);
+      const epoc = new Date(cur.range.start).setUTCHours(0, 0, 0, 0);
       const src = cur.def.sourceId;
       if (!prev[epoc]) prev[epoc] = { [src]: [] };
       if (!prev[epoc][src]) prev[epoc][src] = [];
@@ -66,12 +67,19 @@ class MultiColumnComponent extends BaseComponent {
         const cells = Object.values(sources)
           .filter((source) => source.ui.display != "background")
           .map((source) =>
-            h(EventListCellComponent, {
-              context,
-              events: events.fg.filter(
-                (event) => event.def.sourceId == source.sourceId
-              ),
-            })
+            h(
+              EventListCellComponent,
+              {
+                context,
+                date: start,
+                events: events.fg.filter(
+                  (event) => event.def.sourceId == source.sourceId
+                ),
+              },
+              events.bg.length
+                ? h(BackgroundEventComponent, { event: events.bg[0] })
+                : null
+            )
           );
 
         return h(
@@ -79,10 +87,15 @@ class MultiColumnComponent extends BaseComponent {
           { class: "fc-multicol-row" },
           showDayHeaders &&
             h(
-              "td",
-              { class: "fc-cell-shaded fc-day" },
-              h(DateHeaderComponent, { context, date: start }),
-              events.bg.length > 0 && h(BackgroundEventComponent, {})
+              DateHeaderCellComponent,
+              {
+                class: "fc-cell-shaded",
+                context,
+                date: start,
+              },
+              events.bg.length
+                ? h(BackgroundEventComponent, { event: events.bg[0] })
+                : null
             ),
           cells
         );
@@ -101,7 +114,7 @@ class MultiColumnComponent extends BaseComponent {
           h(
             "tr",
             {},
-            showDayHeaders && h("th", { class: "fc-cell-shaded" }),
+            showDayHeaders && h("th", { class: "fc-cell-shaded fc-day" }),
             headers
           )
         ),

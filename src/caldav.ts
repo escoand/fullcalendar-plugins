@@ -4,10 +4,7 @@ import {
   EventSourceInput,
   createPlugin,
 } from "@fullcalendar/core";
-import {
-  EventSourceDef,
-  EventSourceRefiners,
-} from "@fullcalendar/core/internal";
+import { EventSourceDef } from "@fullcalendar/core/internal";
 import "core-js/stable";
 import * as ICAL from "ical.js";
 
@@ -136,7 +133,7 @@ const sourceDef: EventSourceDef<CalDavMeta> = {
 const initSourceAsync = (
   cal: CalendarApi,
   url: string,
-  custom: EventSourceInput
+  custom?: EventSourceInput
 ) => {
   cal.trigger("loading", true);
   fetch(url, {

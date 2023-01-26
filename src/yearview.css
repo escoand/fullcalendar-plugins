@@ -1,11 +1,17 @@
 .fc-yearview {
-  border-collapse: collapse;
+  border-collapse: collapse !important;
+}
+.fc-yearview .fc-day-col {
+  width: 35px;
+}
+.fc-yearview th {
+  padding: 8px;
 }
 .fc-yearview .fc-day-empty {
   border: none;
 }
-.fc-day-today {
-  background-color: var(--fc-today-bg-color, rgba(255, 220, 40, 0.15));
+.fc-yearview .fc-day-today {
+  background-color: var(--fc-today-bg-color);
 }
 .fc-yearview .fc-day {
   border-right: none;
@@ -14,14 +20,13 @@
   position: relative;
   text-align: center;
 }
-.fc-yearview .fc-bg-event {
-  overflow: hidden;
-  z-index: -1;
-}
 .fc-yearview .fc-events {
   border-left: none;
   padding: 1px 2px 0 0;
   position: relative;
+}
+.fc-yearview .fc-bg-event {
+  z-index: -1;
 }
 .fc-yearview .fc-event {
   border-radius: 3px;

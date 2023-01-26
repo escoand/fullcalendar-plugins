@@ -1,7 +1,7 @@
 .fc-multicol {
-  border-collapse: collapse;
+  border-collapse: collapse !important;
 }
-.fc-day-today {
+.fc-multicol .fc-day-today {
   background-color: var(--fc-today-bg-color);
 }
 .fc-multicol th {
@@ -10,17 +10,16 @@
 .fc-multicol .fc-day {
   font-weight: bold;
   padding: 2px;
-  text-align: center;
-}
-.fc-multicol .fc-bg-event {
-  overflow: hidden;
-  z-index: -1;
-}
-.fc-multicol .fc-multicol-row {
   position: relative;
+  text-align: center;
+  width: 40px;
 }
 .fc-multicol .fc-events {
   padding: 2px;
+  position: relative;
+}
+.fc-multicol .fc-bg-event {
+  z-index: -1;
 }
 .fc-multicol .fc-event {
   border-radius: 3px;
