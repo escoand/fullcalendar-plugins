@@ -52,7 +52,7 @@ interface EventProps {
   context: ViewContext;
   event: EventRenderRange;
 }
-interface BackgroundEventsProps {
+interface BackgroundEventProps {
   events?: EventRenderRange[];
 }
 
@@ -68,11 +68,11 @@ function createProps(event: EventRenderRange) {
 }
 
 export function getFullDayRange(date?: Date): DateRange {
-  if (!date) date = new Date();
-  date.setUTCHours(0, 0, 0, 0);
-  const next = new Date(date);
-  next.setUTCDate(next.getUTCDate() + 1);
-  return { start: date, end: next };
+  const start = new Date(date);
+  start.setUTCHours(0, 0, 0, 0);
+  const end = new Date(start);
+  end.setUTCDate(end.getUTCDate() + 1);
+  return { start, end };
 }
 
 export function formatMonth(date: Date, calendar: CalendarApi) {
@@ -98,9 +98,9 @@ export function EventListCellComponent(props: EventListProps) {
   );
 }
 
-export function BackgroundEventComponent(props: BackgroundEventsProps) {
+export function BackgroundEventComponent(props: BackgroundEventProps) {
   const { events } = props;
-  if (events.length === 0) return null;
+  if (events.length === 0) return;
   const childProps = createProps(events[0]);
   return h(BgEvent, childProps);
 }

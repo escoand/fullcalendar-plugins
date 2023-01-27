@@ -5,7 +5,8 @@
   width: 35px;
 }
 .fc-yearview th {
-  padding: 8px;
+  overflow: hidden;
+  padding: 2px 4px;
 }
 .fc-yearview .fc-day-empty {
   border: none;
@@ -25,22 +26,15 @@
   padding: 1px 2px 0 0;
   position: relative;
 }
-.fc-yearview .fc-bg-event {
+.fc-yearview .fc-event.fc-bg-event {
+  border: none;
+  margin: 0;
   z-index: -1;
 }
 .fc-yearview .fc-event {
   border-radius: 3px;
-  display: block;
   font-size: var(--fc-small-font-size, 0.85em);
   margin: 1px 0 2px 0;
   overflow: hidden;
   padding: 1px 2px;
-}
-.fc-yearview .fc-event-time {
-  display: inline-block;
-  margin-right: 3px;
-  overflow: unset;
-}
-.fc-yearview .fc-event-location {
-  display: inline-block;
 }

@@ -5,25 +5,22 @@
   background-color: var(--fc-today-bg-color);
 }
 .fc-multicol th {
-  padding: 8px;
-}
-.fc-multicol .fc-day {
-  font-weight: bold;
-  padding: 2px;
-  position: relative;
-  text-align: center;
-  width: 40px;
+  overflow: hidden;
+  padding: 2px 4px;
 }
 .fc-multicol .fc-events {
   padding: 2px;
   position: relative;
 }
-.fc-multicol .fc-bg-event {
+.fc-multicol .fc-event.fc-bg-event {
+  border: none;
+  margin: 0;
   z-index: -1;
 }
 .fc-multicol .fc-event {
   border-radius: 3px;
   display: block;
+  font-size: var(--fc-small-font-size);
   margin: 1px 0 2px 0;
   overflow: hidden;
   padding: 1px 2px;

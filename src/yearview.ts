@@ -40,7 +40,7 @@ class YearComponent extends BaseComponent {
       firstDay.setUTCMonth(month, 1);
       return h(
         "th",
-        { class: "fc-cell-shaded", colSpan: 2 },
+        { class: "fc-col-header-cell", colSpan: 2 },
         formatMonth(firstDay, context.calendarApi)
       );
     });

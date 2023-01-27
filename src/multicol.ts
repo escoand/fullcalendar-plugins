@@ -29,96 +29,75 @@ class MultiColumnComponent extends BaseComponent {
     const todayRange = getFullDayRange();
 
     const sources = context.calendarApi.getCurrentData().eventSources;
-    const events = Object.values(
-      sliceEventStore(
-        props.eventStore,
-        props.eventUiBases,
-        props.dateProfile.activeRange,
-        props.nextDayThreshold
-      )
-    ).flat();
 
     // headers
-    const headers = Object.values(sources)
-      .filter((source) => source.ui.display != "background")
+    const headers = (showDayHeaders ? [null] : [])
+      .concat(Object.values(sources))
+      .filter((source) => source?.ui.display != "background")
       .map((source) =>
-        h("th", { class: "fc-cell-shaded" }, source.extendedProps.name || "")
+        h(
+          "th",
+          { class: "fc-col-header-cell fc-day", role: "columnheader" },
+          h(
+            "div",
+            { class: "fc-scrollgrid-sync-inner" },
+            source?.extendedProps.name || ""
+          )
+        )
       );
 
-    // days
-    const dayMap = events.reduce((prev, cur) => {
-      const epoc = new Date(cur.range.start).setUTCHours(0, 0, 0, 0);
-      const src = cur.def.sourceId;
-      if (!prev[epoc]) prev[epoc] = { [src]: [] };
-      if (!prev[epoc][src]) prev[epoc][src] = [];
-      prev[epoc][src].push(cur);
-      return prev;
-    }, {});
+    const rows = [];
+    const date = new Date(props.dateProfile.renderRange.start);
+    while (date.getTime() < props.dateProfile.renderRange.end.getTime()) {
+      const thisDay = getFullDayRange(date);
+      const events = sliceEventStore(
+        props.eventStore,
+        props.eventUiBases,
+        thisDay,
+        props.nextDayThreshold
+      );
 
-    // date rows
-    const rows = Object.entries(dayMap)
-      .sort(([epocA], [epocB]) => epocA.localeCompare(epocB))
-      .map(([epoc]) => {
-        const start = new Date(Number.parseInt(epoc));
-        const end = new Date(start);
-        end.setDate(end.getDate() + 1);
-        const events = sliceEventStore(
-          props.eventStore,
-          props.eventUiBases,
-          { start, end },
-          props.nextDayThreshold
-        );
-
-        // normal events
-        const cells = Object.values(sources)
-          .filter((source) => source.ui.display != "background")
-          .map((source) =>
-            h(
-              EventListCellComponent,
-              {
-                context,
-                date: start,
-                events: events.fg.filter(
-                  (event) => event.def.sourceId == source.sourceId
-                ),
-              },
-              h(BackgroundEventComponent, { events: events.bg })
-            )
-          );
-        return h(
+      rows.push(
+        h(
           "tr",
           { class: "fc-multicol-row" },
-          showDayHeaders &&
-            h(
-              TableDateCell,
-              {
+          showDayHeaders
+            ? h(TableDateCell, {
                 dayHeaderFormat,
-                date: start,
+                date: thisDay.start,
                 dateProfile: props.dateProfile,
                 todayRange,
-                colCnt: 0,
-              },
-              h(BackgroundEventComponent, { events: events.bg })
-            ),
-          cells
-        );
-      });
+                colCnt: 1,
+                extraRenderProps: { class: "extra" },
+              })
+            : null,
+          Object.values(sources)
+            .filter((source) => source.ui.display != "background")
+            .map((source) =>
+              h(
+                EventListCellComponent,
+                {
+                  context,
+                  date: thisDay.start,
+                  events: events.fg.filter(
+                    (event) => event.def.sourceId == source.sourceId
+                  ),
+                },
+                h(BackgroundEventComponent, { events: events.bg })
+              )
+            )
+        )
+      );
+
+      date.setUTCDate(date.getUTCDate() + 1);
+    }
 
     return [
       h("style", {}, css),
       h(
         "table",
         { class: "fc-scrollgrid fc-multicol" },
-        h(
-          "thead",
-          {},
-          h(
-            "tr",
-            {},
-            showDayHeaders && h("th", { class: "fc-cell-shaded fc-day" }),
-            headers
-          )
-        ),
+        h("thead", {}, h("tr", {}, headers)),
         h("tbody", {}, rows)
       ),
     ];
