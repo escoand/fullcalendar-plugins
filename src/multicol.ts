@@ -1,6 +1,7 @@
 import { createPlugin } from "@fullcalendar/core";
 import {
   BaseComponent,
+  TableDateCell,
   ViewContext,
   sliceEventStore,
 } from "@fullcalendar/core/internal";
@@ -8,9 +9,10 @@ import { ComponentChild, h } from "@fullcalendar/core/preact";
 import "core-js/stable";
 import {
   BackgroundEventComponent,
-  DateHeaderCellComponent,
+  DEFAULT_DATE_FORMATTER,
   EventListCellComponent,
   ExtendedViewProps,
+  getFullDayRange,
 } from "./common";
 // @ts-expect-error
 import css from "./multicol.css";
@@ -21,6 +23,11 @@ class MultiColumnComponent extends BaseComponent {
     state: Readonly<{}>,
     context: ViewContext
   ): ComponentChild {
+    const showDayHeaders = context.viewApi.getOption("dayHeaders");
+    const dayHeaderFormat =
+      context.viewApi.getOption("dayHeaderFormat") || DEFAULT_DATE_FORMATTER;
+    const todayRange = getFullDayRange();
+
     const sources = context.calendarApi.getCurrentData().eventSources;
     const events = Object.values(
       sliceEventStore(
@@ -30,7 +37,6 @@ class MultiColumnComponent extends BaseComponent {
         props.nextDayThreshold
       )
     ).flat();
-    const showDayHeaders = context.viewApi.getOption("dayHeaders");
 
     // headers
     const headers = Object.values(sources)
@@ -76,34 +82,29 @@ class MultiColumnComponent extends BaseComponent {
                   (event) => event.def.sourceId == source.sourceId
                 ),
               },
-              events.bg.length
-                ? h(BackgroundEventComponent, { event: events.bg[0] })
-                : null
+              h(BackgroundEventComponent, { events: events.bg })
             )
           );
-
         return h(
           "tr",
           { class: "fc-multicol-row" },
           showDayHeaders &&
             h(
-              DateHeaderCellComponent,
+              TableDateCell,
               {
-                class: "fc-cell-shaded",
-                context,
+                dayHeaderFormat,
                 date: start,
+                dateProfile: props.dateProfile,
+                todayRange,
+                colCnt: 0,
               },
-              events.bg.length
-                ? h(BackgroundEventComponent, { event: events.bg[0] })
-                : null
+              h(BackgroundEventComponent, { events: events.bg })
             ),
           cells
         );
       });
 
-    return h(
-      "div",
-      {},
+    return [
       h("style", {}, css),
       h(
         "table",
@@ -119,8 +120,8 @@ class MultiColumnComponent extends BaseComponent {
           )
         ),
         h("tbody", {}, rows)
-      )
-    );
+      ),
+    ];
   }
 }
 

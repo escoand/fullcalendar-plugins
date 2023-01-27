@@ -1,6 +1,7 @@
 import { createPlugin } from "@fullcalendar/core";
 import {
   BaseComponent,
+  TableDateCell,
   ViewContext,
   sliceEventStore,
 } from "@fullcalendar/core/internal";
@@ -8,10 +9,11 @@ import { ComponentChild, h } from "@fullcalendar/core/preact";
 import "core-js/stable";
 import {
   BackgroundEventComponent,
-  DateHeaderCellComponent,
+  DEFAULT_DATE_FORMATTER,
   EventListCellComponent,
   ExtendedViewProps,
   formatMonth,
+  getFullDayRange,
 } from "./common";
 // @ts-expect-error
 import css from "./yearview.css";
@@ -22,6 +24,10 @@ class YearComponent extends BaseComponent {
     state: Readonly<{}>,
     context: ViewContext
   ): ComponentChild {
+    const dayHeaderFormat =
+      context.viewApi.getOption("dayHeaderFormat") || DEFAULT_DATE_FORMATTER;
+    const todayRange = getFullDayRange();
+
     // columns
     const cols = Array.from(Array(12).keys()).map(() => [
       h("col", { class: "fc-day-col" }),
@@ -65,16 +71,13 @@ class YearComponent extends BaseComponent {
             props.nextDayThreshold
           );
           return [
-            h(
-              DateHeaderCellComponent,
-              {
-                context,
-                date: start,
-              },
-              events.bg.length
-                ? h(BackgroundEventComponent, { event: events.bg[0] })
-                : null
-            ),
+            h(TableDateCell, {
+              dayHeaderFormat,
+              date: start,
+              dateProfile: props.dateProfile,
+              todayRange,
+              colCnt: 0,
+            }),
             h(
               EventListCellComponent,
               {
@@ -82,18 +85,14 @@ class YearComponent extends BaseComponent {
                 date: start,
                 events: events.fg,
               },
-              events.bg.length
-                ? h(BackgroundEventComponent, { event: events.bg[0] })
-                : null
+              h(BackgroundEventComponent, { events: events.bg })
             ),
           ];
         })
       )
     );
 
-    return h(
-      "div",
-      {},
+    return [
       h("style", {}, css),
       h(
         "table",
@@ -101,8 +100,8 @@ class YearComponent extends BaseComponent {
         h("colgroup", {}, cols),
         h("thead", {}, h("tr", {}, headers)),
         h("tbody", {}, cells)
-      )
-    );
+      ),
+    ];
   }
 }
 
