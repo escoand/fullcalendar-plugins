@@ -55,25 +55,19 @@ const createEvent = (
 ): EventInput =>
   Object.assign(
     {
-      classNames: []
-        .concat(
-          (
-            (event.description && event.description.match(/#[a-zA-Z0-9]+/g)) ||
-            []
-          ).map((item) => `category-${item.substr(1)}`)
-        )
-        .concat(
-          (event._firstProp("status") && [
-            `status-${event._firstProp("status").toLowerCase()}`,
-          ]) ||
-            []
-        ),
-      description: event.description,
       end: end?.toString() || event.endDate.toString(),
-      location: event.location,
       start: start?.toString() || event.startDate.toString(),
       title: event.summary,
+      extendedProperties: {
+        categories:
+          event.component.getFirstProperty("categories")?.jCal.slice(3) || [],
+        description: event.description,
+        location: event.location,
+        organizer: event.organizer,
+        status: event.component.getFirstPropertyValue("status"),
+      },
     },
+    event.color && { color: event.color },
     event.description?.search(httpUrl) >= 0 && {
       url: event.description.match(httpUrl)[0],
     }
