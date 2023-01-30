@@ -1,9 +1,4 @@
-import {
-  CalendarApi,
-  Duration,
-  EventRenderRange,
-  FormatterInput,
-} from "@fullcalendar/core";
+import { Duration, EventRenderRange, FormatterInput } from "@fullcalendar/core";
 import {
   BgEvent,
   DateProfile,
@@ -13,10 +8,11 @@ import {
   ViewProps,
   createFormatter,
   getDateMeta,
+  getDayClassNames,
 } from "@fullcalendar/core/internal";
 import { h } from "@fullcalendar/core/preact";
 
-const DEFAULT_MONTH_FORMAT: FormatterInput = {
+export const DEFAULT_MONTH_FORMAT: FormatterInput = {
   month: "long",
 };
 
@@ -57,42 +53,36 @@ interface BackgroundEventProps {
 }
 
 function createProps(event: EventRenderRange) {
-  const meta = getDateMeta(event.instance.range.start, getFullDayRange());
+  const today = getFullDayRange();
+  const meta = getDateMeta(event.instance.range.start, today);
   return Object.assign(meta, {
     seg: {
-      isStart: true,
-      isEnd: false,
+      isStart: event.instance.range.start > today.start,
+      isEnd: event.instance.range.end < today.end,
       eventRange: event,
     },
   });
 }
 
-export function getFullDayRange(date?: Date): DateRange {
-  const start = new Date(date);
+export function getFullDayRange(date?: Date, offset?: number): DateRange {
+  const start = new Date(date || Date.now());
+  offset && start.setUTCDate(start.getUTCDate() + offset);
   start.setUTCHours(0, 0, 0, 0);
   const end = new Date(start);
   end.setUTCDate(end.getUTCDate() + 1);
   return { start, end };
 }
 
-export function formatMonth(date: Date, calendar: CalendarApi) {
-  return calendar.formatDate(date, DEFAULT_MONTH_FORMAT);
-}
-
-function isToday(date: Date) {
-  const today = new Date();
-  return (
-    date.getDate() == today.getDate() &&
-    date.getMonth() == today.getMonth() &&
-    date.getFullYear() == today.getFullYear()
-  );
-}
-
 export function EventListCellComponent(props: EventListProps) {
   const { children, context, date, events } = props;
+  const meta = getDateMeta(date, getFullDayRange());
   return h(
     "td",
-    { class: ["fc-events", isToday(date) ? "fc-day-today" : null].join(" ") },
+    {
+      class: getDayClassNames(meta, context.theme)
+        .concat(["fc-events"])
+        .join(" "),
+    },
     events.map((event) => h(EventComponent, { context, event })),
     children
   );

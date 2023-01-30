@@ -27,13 +27,13 @@ class MultiColumnComponent extends BaseComponent {
     const dayHeaderFormat =
       context.viewApi.getOption("dayHeaderFormat") || DEFAULT_DATE_FORMATTER;
     const todayRange = getFullDayRange();
-
-    const sources = context.calendarApi.getCurrentData().eventSources;
+    const fgSources = Object.values(
+      context.calendarApi.getCurrentData().eventSources
+    ).filter((source) => source?.ui.display != "background");
 
     // headers
     const headers = (showDayHeaders ? [null] : [])
-      .concat(Object.values(sources))
-      .filter((source) => source?.ui.display != "background")
+      .concat(fgSources)
       .map((source) =>
         h(
           "th",
@@ -46,6 +46,7 @@ class MultiColumnComponent extends BaseComponent {
         )
       );
 
+    // day rows
     const rows = [];
     const date = new Date(props.dateProfile.renderRange.start);
     while (date.getTime() < props.dateProfile.renderRange.end.getTime()) {
@@ -61,31 +62,28 @@ class MultiColumnComponent extends BaseComponent {
         h(
           "tr",
           { class: "fc-multicol-row" },
-          showDayHeaders
-            ? h(TableDateCell, {
-                dayHeaderFormat,
+          showDayHeaders &&
+            h(TableDateCell, {
+              dayHeaderFormat,
+              date: thisDay.start,
+              dateProfile: props.dateProfile,
+              todayRange,
+              colCnt: 1,
+              extraRenderProps: { class: "extra" },
+            }),
+          fgSources.map((source) =>
+            h(
+              EventListCellComponent,
+              {
+                context,
                 date: thisDay.start,
-                dateProfile: props.dateProfile,
-                todayRange,
-                colCnt: 1,
-                extraRenderProps: { class: "extra" },
-              })
-            : null,
-          Object.values(sources)
-            .filter((source) => source.ui.display != "background")
-            .map((source) =>
-              h(
-                EventListCellComponent,
-                {
-                  context,
-                  date: thisDay.start,
-                  events: events.fg.filter(
-                    (event) => event.def.sourceId == source.sourceId
-                  ),
-                },
-                h(BackgroundEventComponent, { events: events.bg })
-              )
+                events: events.fg.filter(
+                  (event) => event.def.sourceId == source.sourceId
+                ),
+              },
+              h(BackgroundEventComponent, { events: events.bg })
             )
+          )
         )
       );
 

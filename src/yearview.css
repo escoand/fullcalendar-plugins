@@ -8,18 +8,18 @@
   overflow: hidden;
   padding: 2px 4px;
 }
-.fc-yearview .fc-day-empty {
-  border: none;
-}
-.fc-yearview .fc-day-today {
-  background-color: var(--fc-today-bg-color);
-}
-.fc-yearview .fc-day {
+.fc-yearview th.fc-day {
   border-right: none;
   font-weight: bold;
   padding: 2px 0;
   position: relative;
   text-align: center;
+}
+.fc-yearview .fc-day-empty {
+  border: none;
+}
+.fc-yearview .fc-day-today {
+  background-color: var(--fc-today-bg-color);
 }
 .fc-yearview .fc-events {
   border-left: none;
