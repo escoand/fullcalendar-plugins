@@ -31,6 +31,10 @@ class MultiColumnComponent extends BaseComponent {
       context.calendarApi.getCurrentData().eventSources
     ).filter((source) => source?.ui.display != "background");
 
+    // cols
+    const cols = showDayHeaders ? [h("col", { class: "fc-day-col" })] : [];
+    fgSources.forEach(() => cols.push(h("col", {})));
+
     // headers
     const headers = (showDayHeaders ? [null] : [])
       .concat(fgSources)
@@ -95,6 +99,7 @@ class MultiColumnComponent extends BaseComponent {
       h(
         "table",
         { class: "fc-scrollgrid fc-multicol" },
+        h("colgroup", {}, cols),
         h("thead", {}, h("tr", {}, headers)),
         h("tbody", {}, rows)
       ),

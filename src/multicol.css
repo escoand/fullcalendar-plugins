@@ -1,6 +1,9 @@
 .fc-multicol {
   border-collapse: collapse !important;
 }
+.fc-multicol .fc-day-col {
+  width: 75px;
+}
 .fc-multicol .fc-day-today {
   background-color: var(--fc-today-bg-color);
 }

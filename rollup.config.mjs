@@ -1,24 +1,25 @@
 import { babel } from "@rollup/plugin-babel";
 import commonjs from "@rollup/plugin-commonjs";
 import resolve from "@rollup/plugin-node-resolve";
-import typescript from "@rollup/plugin-typescript";
+import terser from "@rollup/plugin-terser";
 import css from "rollup-plugin-import-css";
 import serve from "rollup-plugin-serve";
-import { terser } from "rollup-plugin-terser";
+
+const extensions = [".js", ".jsx", ".ts", ".tsx"];
 
 const plugins = [
-  resolve(),
+  resolve({ extensions }),
   commonjs(),
-  typescript(),
   babel({
     babelHelpers: "bundled",
     exclude: [/\/core-js\//],
+    extensions,
     presets: [
+      "@babel/preset-typescript",
       [
         "@babel/preset-env",
         {
-          corejs: "3.19",
-          modules: false,
+          corejs: "3.27",
           useBuiltIns: "usage",
         },
       ],
