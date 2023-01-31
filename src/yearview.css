@@ -2,7 +2,7 @@
   border-collapse: collapse !important;
 }
 .fc-yearview .fc-day-col {
-  width: 35px;
+  width: 40px;
 }
 .fc-yearview th {
   overflow: hidden;
@@ -31,7 +31,7 @@
   margin: 0;
   z-index: -1;
 }
-.fc-yearview .fc-event {
+.fc-yearview .fc-h-event {
   border-radius: 3px;
   font-size: var(--fc-small-font-size, 0.85em);
   margin: 1px 0 2px 0;

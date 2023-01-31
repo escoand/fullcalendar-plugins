@@ -28,7 +28,7 @@ const plugins = [
   css({ minify: true }),
   terser(),
   // http server if watch mode
-  process.env.ROLLUP_WATCH && serve({ open: true }),
+  process.env.ROLLUP_WATCH && serve({ open: true, openPage: "/samples/" }),
 ];
 
 const createOutput = (input, name) => ({

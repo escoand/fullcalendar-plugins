@@ -57,8 +57,8 @@ function createProps(event: EventRenderRange) {
   const meta = getDateMeta(event.instance.range.start, today);
   return Object.assign(meta, {
     seg: {
-      isStart: event.instance.range.start > today.start,
-      isEnd: event.instance.range.end < today.end,
+      isStart: event.instance.range.start >= today.start,
+      isEnd: event.instance.range.end <= today.end,
       eventRange: event,
     },
   });

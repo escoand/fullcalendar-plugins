@@ -20,7 +20,7 @@
   margin: 0;
   z-index: -1;
 }
-.fc-multicol .fc-event {
+.fc-multicol .fc-h-event {
   border-radius: 3px;
   display: block;
   font-size: var(--fc-small-font-size);
