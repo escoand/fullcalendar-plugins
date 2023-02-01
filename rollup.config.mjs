@@ -7,12 +7,17 @@ import serve from "rollup-plugin-serve";
 
 const extensions = [".js", ".jsx", ".ts", ".tsx"];
 
+const globals = {
+  "@fullcalendar/core": "FullCalendar",
+  "@fullcalendar/core/internal": "FullCalendar.Internal",
+  "@fullcalendar/core/preact": "FullCalendar.Preact",
+};
+
 const plugins = [
   resolve({ extensions }),
   commonjs(),
   babel({
     babelHelpers: "bundled",
-    exclude: [/\/core-js\//],
     extensions,
     presets: [
       "@babel/preset-typescript",
@@ -20,10 +25,11 @@ const plugins = [
         "@babel/preset-env",
         {
           corejs: "3.27",
-          useBuiltIns: "usage",
+          useBuiltIns: "entry",
         },
       ],
     ],
+    targets: "defaults",
   }),
   css({ minify: true }),
   terser(),
@@ -32,11 +38,13 @@ const plugins = [
 ];
 
 const createOutput = (input, name) => ({
+  external: Object.keys(globals),
   input,
   output: {
     compact: true,
     dir: "dist/",
     format: "iife",
+    globals,
     name,
     sourcemap: true,
   },

@@ -53,14 +53,15 @@
         name: "Demo",
       },
     ],
-    height: "100%",
-    plugins: [CalDavPlugin, MultiColumnPlugin, YearViewPlugin],
     headerToolbar: {
       center: "title",
       left: "prev,next today",
       right:
         "multiCol,yearView listWeek,timeGridWeek,dayGridWeek,dayGridMonth,multiMonthYear",
     },
+    height: "100%",
+    plugins: [CalDavPlugin, MultiColumnPlugin, YearViewPlugin],
+    weekNumbers: true,
   });
   cal.render();
 </script>
