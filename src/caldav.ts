@@ -15,13 +15,18 @@ interface CalDavMeta {
 
 const httpUrl = /https?:\/\/\S+/;
 
-const namespaceResolver = (prefix: string): string | null =>
-  ({
-    a: "http://apple.com/ns/ical/",
-    c: "urn:ietf:params:xml:ns:caldav",
-    d: "DAV:",
-    n: "http://nextcloud.com/ns",
-  }[prefix] || null);
+const namespaceResolver: XPathNSResolver = (prefix) =>
+  (prefix &&
+    {
+      a: "http://apple.com/ns/ical/",
+      c: "urn:ietf:params:xml:ns:caldav",
+      d: "DAV:",
+      n: "http://nextcloud.com/ns",
+    }[prefix]) ||
+  null;
+
+const basicIsoDate = (date: Date): string =>
+  date.toISOString().replace(/-|:|\.\d\d\d/g, "");
 
 const parseIcal = (ical: string, start: Date, end: Date): EventInput[] => {
   const jcal = ICAL.parse(ical);
@@ -48,11 +53,7 @@ const parseIcal = (ical: string, start: Date, end: Date): EventInput[] => {
   });
 };
 
-const createEvent = (
-  event: ICAL.Event,
-  start: Date = null,
-  end: Date = null
-): EventInput =>
+const createEvent = (event: ICAL.Event, start?: Date, end?: Date): EventInput =>
   Object.assign(
     {
       end: end?.toString() || event.endDate.toString(),
@@ -75,6 +76,7 @@ const createEvent = (
 
 const sourceDef: EventSourceDef<CalDavMeta> = {
   parseMeta(refined) {
+    if (!refined.url) throw new Error("url not set");
     return { url: refined.url, format: "caldav" };
   },
   fetch(arg, successCallback, errorCallback) {
@@ -90,9 +92,9 @@ const sourceDef: EventSourceDef<CalDavMeta> = {
         '<comp-filter name="VCALENDAR">' +
         '<comp-filter name="VEVENT">' +
         '<time-range start="' +
-        ICAL.Time.fromJSDate(arg.range.start).toICALString() +
+        basicIsoDate(arg.range.start) +
         '" end="' +
-        ICAL.Time.fromJSDate(arg.range.end).toICALString() +
+        basicIsoDate(arg.range.end) +
         '"/>' +
         "</comp-filter>" +
         "</comp-filter>" +
@@ -112,9 +114,10 @@ const sourceDef: EventSourceDef<CalDavMeta> = {
           const events: EventInput[] = [];
           let next = iter.iterateNext();
           while (next) {
-            events.push(
-              parseIcal(next.textContent, arg.range.start, arg.range.end)
-            );
+            next.textContent &&
+              events.push(
+                parseIcal(next.textContent, arg.range.start, arg.range.end)
+              );
             next = iter.iterateNext();
           }
           successCallback({ response, rawEvents: events.flat() });
@@ -165,11 +168,10 @@ const initSourceAsync = (
   );
 };
 
-const pluginDef = createPlugin({
-  name: "CalDavPlugin",
-  eventSourceDefs: [sourceDef],
-});
-// @ts-expect-error
-pluginDef.initSourceAsync = initSourceAsync;
-
-export default pluginDef;
+export default Object.assign(
+  createPlugin({
+    name: "CalDavPlugin",
+    eventSourceDefs: [sourceDef],
+  }),
+  { initSourceAsync }
+);
