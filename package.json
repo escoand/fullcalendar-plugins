@@ -1,19 +1,19 @@
 {
   "devDependencies": {
-    "@babel/core": "7.23.9",
-    "@babel/preset-env": "7.23.9",
-    "@babel/preset-typescript": "7.23.3",
-    "@fullcalendar/core": "6.1.10",
+    "@babel/core": "7.24.7",
+    "@babel/preset-env": "7.24.7",
+    "@babel/preset-typescript": "7.24.7",
+    "@fullcalendar/core": "6.1.14",
     "@rollup/plugin-babel": "6.0.4",
     "@rollup/plugin-commonjs": "26.0.1",
     "@rollup/plugin-node-resolve": "15.2.3",
     "@rollup/plugin-terser": "0.4.4",
-    "core-js": "3.35.1",
+    "core-js": "3.37.1",
     "ical.js": "1.5.0",
     "rollup": "3.29.4",
-    "rollup-plugin-import-css": "3.4.0",
+    "rollup-plugin-import-css": "3.5.0",
     "rollup-plugin-serve": "3.0.0",
-    "tslib": "2.6.2",
+    "tslib": "2.6.3",
     "typescript": "5.5.2"
   },
   "scripts": {
