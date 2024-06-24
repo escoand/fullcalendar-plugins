@@ -6,7 +6,7 @@ import {
 } from "@fullcalendar/core";
 import { EventSourceDef } from "@fullcalendar/core/internal";
 import "core-js/stable";
-import * as ICAL from "ical.js";
+import ICAL from "ical.js";
 
 interface CalDavMeta {
   url: string;

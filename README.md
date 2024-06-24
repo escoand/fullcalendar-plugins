@@ -33,6 +33,7 @@ Easiest way is to use a CDN deployment like this:
 ```html
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar"></script>
 <script src="https://cdn.jsdelivr.net/gh/escoand/fullcalendar-plugins/dist/caldav.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/escoand/fullcalendar-plugins/dist/loading.js"></script>
 <script src="https://cdn.jsdelivr.net/gh/escoand/fullcalendar-plugins/dist/multicol.js"></script>
 <script src="https://cdn.jsdelivr.net/gh/escoand/fullcalendar-plugins/dist/yearview.js"></script>
 <div id="calendar"></div>
