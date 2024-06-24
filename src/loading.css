@@ -2,11 +2,14 @@
   background: rgba(255, 255, 255, 0.75);
   bottom: 0;
   content: "\27F3";
+  display: flex;
+  flex-direction: column;
   font-size: 10vh;
+  justify-content: center;
   left: 0;
-  line-height: 100vh;
   position: absolute;
   right: 0;
   text-align: center;
   top: 0;
+  z-index: 1;
 }
