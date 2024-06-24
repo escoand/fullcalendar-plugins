@@ -1,5 +1,4 @@
-<script
-  src="https://cdn.jsdelivr.net/combine/npm/fullcalendar@6.1,npm/@fullcalendar/core@6.1/locales/de.global.min.js"></script>
+<script src="https://cdn.jsdelivr.net/combine/npm/fullcalendar@6.1,npm/@fullcalendar/core@6.1/locales/de.global.min.js"></script>
 <script src="caldav.js"></script>
 <script src="loading.js"></script>
 <script src="multicol.js"></script>
@@ -8,12 +7,10 @@
   #calendar {
     font-family: sans-serif;
   }
-
 </style>
 <div id="calendar"></div>
 <script>
   const cal = new FullCalendar.Calendar(document.getElementById("calendar"), {
-
     // activate plugins
     plugins: [CalDavPlugin, LoadingPlugin, MultiColumnPlugin, YearViewPlugin],
 
@@ -39,32 +36,31 @@
         "addCalDav multiCol,yearView listWeek,timeGridWeek,dayGridWeek,dayGridMonth,multiMonthYear",
     },
 
-    // view specific configuration
-    views: {
-      yearView: {
-        eventTimeFormat: {
-          hour: "2-digit",
-          minute: "2-digit",
-          meridiem: false,
-        },
-      }
-    },
-
     // default settings
     displayEventEnd: false,
+    eventTimeFormat: {
+      hour: "2-digit",
+      hour12: false,
+      minute: "2-digit",
+      meridiem: false,
+    },
     weekNumbers: true,
 
     // custom test settings
     customButtons: {
       addCalDav: {
-        text: '+CalDav',
+        text: "+CalDav",
         click: function () {
-          const url = prompt("Please enter a CalDav URL.")
+          const url = prompt("Please enter a CalDav URL.");
           if (url) {
-            cal.addEventSource({ url: url, format: "caldav", name: "Custom CalDav" })
+            cal.addEventSource({
+              url: url,
+              format: "caldav",
+              name: "Custom CalDav",
+            });
           }
-        }
-      }
+        },
+      },
     },
     eventContent(arg) {
       return {
@@ -75,8 +71,8 @@
           arg.event.title +
           (arg.event.extendedProps?.location
             ? ' <i style="display:inline-block;float:right">' +
-            arg.event.extendedProps?.location +
-            "</i>"
+              arg.event.extendedProps?.location +
+              "</i>"
             : "") +
           "</div>",
       };
