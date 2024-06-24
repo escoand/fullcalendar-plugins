@@ -1,29 +1,34 @@
-import { createPlugin } from "@fullcalendar/core";
-import { CalendarListenerRefiners } from "@fullcalendar/core/internal";
+import { Calendar, PluginDefInput, createPlugin } from "@fullcalendar/core";
+import { CalendarContext } from "@fullcalendar/core/internal";
 import "core-js/stable";
+// @ts-expect-error
+import css from "./loading.css";
 
-class LoadingListener implements CalendarListenerRefiners {
-  constructor() {
-    console.log("constructor", ...arguments);
+class LoadingListener {
+  el: HTMLElement;
+
+  static build(name: string): PluginDefInput {
+    const ll = new LoadingListener();
+    return {
+      name,
+      contextInit: ll.contextInit.bind(ll),
+      isLoadingFuncs: [ll.isLoadingFunc.bind(ll)],
+    };
   }
 
-  loading(isLoading: boolean) {
-    let loading;
-    if (this.el.childNodes.length == 2) {
-      loading = this.el.appendChild(document.createElement("div"));
-      loading.setAttribute("id", "loading");
-      loading.classList.add("loading");
-      loading.innerHTML = "<h3>Bitte warten ...</h3>";
-    } else {
-      loading = this.el.lastChild;
-    }
-    if (loading) {
-      loading.style.display = isLoading ? "block" : "none";
-    }
+  contextInit(context: CalendarContext): void {
+    this.el = (context.calendarApi as Calendar).el;
+    this.el.appendChild(document.createElement("style")).append(css);
+  }
+
+  isLoadingFunc(state: Record<string, any>): boolean {
+    const isLoading = Object.values(
+      state.eventSources as Record<string, any>
+    ).some((src) => src.isFetching);
+    if (isLoading) this.el.classList.add("loading");
+    else this.el.classList.remove("loading");
+    return isLoading;
   }
 }
 
-export default createPlugin({
-  name: "LoadingPlugin",
-  listenerRefiners: { loading: LoadingListener },
-});
+export default createPlugin(LoadingListener.build("LoadingPlugin"));

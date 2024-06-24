@@ -24,7 +24,7 @@ const plugins = [
       [
         "@babel/preset-env",
         {
-          corejs: "3.27",
+          corejs: "3.35",
           useBuiltIns: "entry",
         },
       ],
@@ -34,7 +34,7 @@ const plugins = [
   css({ minify: true }),
   terser(),
   // http server if watch mode
-  process.env.ROLLUP_WATCH && serve({ open: true, openPage: "/samples/" }),
+  process.env.ROLLUP_WATCH && serve({ open: true, openPage: "/dist/" }),
 ];
 
 const createOutput = (input, name) => ({
@@ -53,6 +53,7 @@ const createOutput = (input, name) => ({
 
 export default [
   createOutput("src/caldav.ts", "CalDavPlugin"),
+  createOutput("src/loading.ts", "LoadingPlugin"),
   createOutput("src/multicol.ts", "MultiColumnPlugin"),
   createOutput("src/yearview.ts", "YearViewPlugin"),
 ];

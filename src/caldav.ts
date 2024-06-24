@@ -132,7 +132,6 @@ const initSourceAsync = (
   url: string,
   custom?: EventSourceInput
 ) => {
-  cal.trigger("loading", true);
   fetch(url, {
     method: "PROPFIND",
     headers: [["Depth", "0"]],
