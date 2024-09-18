@@ -4,14 +4,25 @@ import {
   EventSourceInput,
   createPlugin,
 } from "@fullcalendar/core";
-import { EventSourceDef } from "@fullcalendar/core/internal";
+import { DateRange, EventSourceDef } from "@fullcalendar/core/internal";
 import "core-js/stable";
 import ICAL from "ical.js";
 
-interface CalDavMeta {
+type CalDavMeta = {
   url: string;
   format: "caldav";
-}
+};
+
+type CalDavConfig = {
+  name: string;
+  color: string;
+};
+
+// from @fullcalendar/core/internal-common.d.ts
+type EventSourceFetcherRes = {
+  rawEvents: EventInput[];
+  response?: Response;
+};
 
 const httpUrl = /https?:\/\/\S+/;
 
@@ -78,63 +89,7 @@ const createEvent = (
     }
   );
 
-const sourceDef: EventSourceDef<CalDavMeta> = {
-  parseMeta(refined) {
-    if (!refined.url) throw new Error("url not set");
-    return { url: refined.url, format: "caldav" };
-  },
-  fetch(arg, successCallback, errorCallback) {
-    fetch(arg.eventSource.meta.url, {
-      method: "REPORT",
-      headers: [["Depth", "1"]],
-      body:
-        '<calendar-query xmlns="urn:ietf:params:xml:ns:caldav">' +
-        '<prop xmlns="DAV:">' +
-        '<calendar-data xmlns="urn:ietf:params:xml:ns:caldav"/>' +
-        "</prop>" +
-        "<filter>" +
-        '<comp-filter name="VCALENDAR">' +
-        '<comp-filter name="VEVENT">' +
-        '<time-range start="' +
-        basicIsoDate(arg.range.start) +
-        '" end="' +
-        basicIsoDate(arg.range.end) +
-        '"/>' +
-        "</comp-filter>" +
-        "</comp-filter>" +
-        "</filter>" +
-        "</calendar-query>",
-    })
-      .then((response) =>
-        response.text().then((text) => {
-          const parser = new DOMParser();
-          const xml = parser.parseFromString(text, "text/xml");
-          const iter = xml.evaluate(
-            "/d:multistatus/d:response/d:propstat/d:prop/c:calendar-data",
-            xml,
-            namespaceResolver,
-            XPathResult.UNORDERED_NODE_ITERATOR_TYPE
-          );
-          const events: EventInput[] = [];
-          let node: Node | null;
-          while ((node = iter.iterateNext())) {
-            node.textContent &&
-              events.push(
-                parseIcal(node.textContent, arg.range.start, arg.range.end)
-              );
-          }
-          successCallback({ response, rawEvents: events.flat() });
-        })
-      )
-      .catch(errorCallback);
-  },
-};
-
-const initSourceAsync = (
-  cal: CalendarApi,
-  url: string,
-  custom?: EventSourceInput
-) => {
+const fetchConfig = (url: string): Promise<CalDavConfig> =>
   fetch(url, {
     method: "PROPFIND",
     headers: [["Depth", "0"]],
@@ -145,29 +100,117 @@ const initSourceAsync = (
       '<calendar-color xmlns="http://apple.com/ns/ical/"/>' +
       "</prop>" +
       "</propfind>",
-  }).then((response) =>
-    response.text().then((text) => {
+  })
+    .then((response) => response.text())
+    .then((text): CalDavConfig => {
       const parser = new DOMParser();
       const xml = parser.parseFromString(text, "text/xml");
       const stringVal = (xpath: string) =>
         xml.evaluate(xpath, xml, namespaceResolver, XPathResult.STRING_TYPE)
           .stringValue;
-      const source: EventSourceInput = Object.assign(
-        {
-          color: stringVal(
-            "/d:multistatus/d:response/d:propstat/d:prop/a:calendar-color"
-          ),
-          format: "caldav",
-          name: stringVal(
-            "/d:multistatus/d:response/d:propstat/d:prop/d:displayname"
-          ),
-          url,
-        },
-        custom
+      return {
+        name: stringVal(
+          "/d:multistatus/d:response/d:propstat/d:prop/d:displayname"
+        ),
+        color: stringVal(
+          "/d:multistatus/d:response/d:propstat/d:prop/a:calendar-color"
+        ),
+      };
+    });
+
+const fetchData = (
+  url: string,
+  range: DateRange
+): Promise<EventSourceFetcherRes> =>
+  fetch(url, {
+    method: "REPORT",
+    headers: [["Depth", "1"]],
+    body:
+      '<calendar-query xmlns="urn:ietf:params:xml:ns:caldav">' +
+      '<prop xmlns="DAV:">' +
+      '<calendar-data xmlns="urn:ietf:params:xml:ns:caldav"/>' +
+      "</prop>" +
+      "<filter>" +
+      '<comp-filter name="VCALENDAR">' +
+      '<comp-filter name="VEVENT">' +
+      '<time-range start="' +
+      basicIsoDate(range.start) +
+      '" end="' +
+      basicIsoDate(range.end) +
+      '"/>' +
+      "</comp-filter>" +
+      "</comp-filter>" +
+      "</filter>" +
+      "</calendar-query>",
+  })
+    .then((response) => response.text())
+    .then((text): EventSourceFetcherRes => {
+      const parser = new DOMParser();
+      const xml = parser.parseFromString(text, "text/xml");
+      const iter = xml.evaluate(
+        "/d:multistatus/d:response/d:propstat/d:prop/c:calendar-data",
+        xml,
+        namespaceResolver,
+        XPathResult.UNORDERED_NODE_ITERATOR_TYPE
       );
-      cal.addEventSource(source);
-    })
+      const events: EventInput[] = [];
+      let node: Node | null;
+      while ((node = iter.iterateNext())) {
+        node.textContent &&
+          events.push(parseIcal(node.textContent, range.start, range.end));
+      }
+      return { rawEvents: events.flat() };
+    });
+
+const sourceDef: EventSourceDef<CalDavMeta> = {
+  parseMeta(refined) {
+    if (!refined.url) throw new Error("url not set");
+    return { url: refined.url, format: "caldav" };
+  },
+  fetch(arg, successCallback, errorCallback) {
+    const src = arg.eventSource;
+    // fetch config, if not disabled or already done
+    if (
+      !src.extendedProps.fetchConfig ||
+      src.extendedProps.fetchConfig === true
+    ) {
+      src.extendedProps.fetchConfig = "done";
+      fetchConfig(src.meta.url)
+        .then((config) => {
+          if (!src.extendedProps.name) {
+            src.extendedProps.name = config.name;
+          }
+          if (!src.ui.backgroundColor && !src.ui.borderColor) {
+            src.ui.backgroundColor = config.color;
+            src.ui.borderColor = config.color;
+          }
+          return fetchData(src.meta.url, arg.range);
+        })
+        .then(successCallback)
+        .catch(errorCallback);
+    }
+    // fetch data directly
+    else {
+      fetchData(src.meta.url, arg.range)
+        .then(successCallback)
+        .catch(errorCallback);
+    }
+  },
+};
+
+const initSourceAsync = (
+  cal: CalendarApi,
+  url: string,
+  custom?: EventSourceInput
+) => {
+  console.warn(
+    "[CalDavPlugin]",
+    "The method CalDavPlugin.initSourceAsync is deprecated, CalDav config is now also fetched when added with the default way."
   );
+  fetchConfig(url).then((config) => {
+    const refined = Object.assign(config, custom, { url, format: "caldav" });
+    cal.addEventSource(refined);
+  });
 };
 
 export default Object.assign(

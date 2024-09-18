@@ -64,11 +64,7 @@
               click: function () {
                 const url = prompt("Please enter a CalDav URL.");
                 if (url) {
-                  cal.addEventSource({
-                    url: url,
-                    format: "caldav",
-                    name: "Custom CalDav",
-                  });
+                  cal.addEventSource({ url, format: "caldav" });
                 }
               },
             },

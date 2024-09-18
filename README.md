@@ -38,21 +38,37 @@ Easiest way is to use a CDN deployment like this:
 <script src="https://cdn.jsdelivr.net/gh/escoand/fullcalendar-plugins/dist/yearview.js"></script>
 <div id="calendar"></div>
 <script>
-  new FullCalendar.Calendar(document.getElementById("calendar"), {
+  var cal = new FullCalendar.Calendar(document.getElementById("calendar"), {
     plugins: [CalDavPlugin, LoadingPlugin, MultiColumnPlugin, YearViewPlugin],
     headerToolbar: {
       center: "title",
       left: "prev,next today",
       right: "multiCol,yearView",
     },
+    // since version 1.2 there are 3 ways to add CalDav calendars
     eventSources: [
+      // 1. add and fetch config (name and color) via CalDav
+      {
+        url: "https://example.com/caldav/",
+        format: "caldav",
+        // custom settings or override name and color
+      },
+      // 2: add CalDav calendar and disable CalDav config fetch
       {
         url: "https://example.com/caldav/",
         format: "caldav",
         name: "My CalDav",
+        fetchConfig: false,
+        // ...
       },
     ],
-  }).render();
+  });
+  cal.render();
+  // 3. add calendar asyncally and fetch config via CalDav
+  // (decrepated and will be removed)
+  CalDavPlugin.initSourceAsync(cal, "https://example.com/caldav/", {
+    // custom settings ...
+  });
 </script>
 ```
 
