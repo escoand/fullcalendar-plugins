@@ -1,0 +1,13 @@
+{
+  "name": "Alpine",
+  "image": "node:alpine",
+  // customize
+  "onCreateCommand": "apk --no-cache add git",
+  "customizations": {
+    "vscode": {
+      "extensions": ["esbenp.prettier-vscode"]
+    }
+  },
+  // runtime
+  "forwardPorts": [10001]
+}

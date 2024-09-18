@@ -35,8 +35,8 @@ const parseIcal = (ical: string, start: Date, end: Date): EventInput[] => {
     const result: EventInput[] = [];
     const event = new ICAL.Event(item);
     if (event.isRecurring()) {
-      const _start = new ICAL.Time().fromJSDate(start);
-      const _end = new ICAL.Time().fromJSDate(end);
+      const _start = ICAL.Time.fromJSDate(start);
+      const _end = ICAL.Time.fromJSDate(end);
       const iter = event.iterator();
       let next = iter.next();
       while (next && next.compare(_end) <= 0) {
@@ -53,7 +53,11 @@ const parseIcal = (ical: string, start: Date, end: Date): EventInput[] => {
   });
 };
 
-const createEvent = (event: ICAL.Event, start?: Date, end?: Date): EventInput =>
+const createEvent = (
+  event: ICAL.Event,
+  start?: ICAL.Time,
+  end?: ICAL.Time
+): EventInput =>
   Object.assign(
     {
       end: end?.toString() || event.endDate.toString(),
@@ -70,7 +74,7 @@ const createEvent = (event: ICAL.Event, start?: Date, end?: Date): EventInput =>
     },
     event.color && { color: event.color },
     event.description?.search(httpUrl) >= 0 && {
-      url: event.description.match(httpUrl)[0],
+      url: event.description?.match(httpUrl)?.[0],
     }
   );
 
@@ -112,13 +116,12 @@ const sourceDef: EventSourceDef<CalDavMeta> = {
             XPathResult.UNORDERED_NODE_ITERATOR_TYPE
           );
           const events: EventInput[] = [];
-          let next = iter.iterateNext();
-          while (next) {
-            next.textContent &&
+          let node: Node | null;
+          while ((node = iter.iterateNext())) {
+            node.textContent &&
               events.push(
-                parseIcal(next.textContent, arg.range.start, arg.range.end)
+                parseIcal(node.textContent, arg.range.start, arg.range.end)
               );
-            next = iter.iterateNext();
           }
           successCallback({ response, rawEvents: events.flat() });
         })

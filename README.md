@@ -39,6 +39,12 @@ Easiest way is to use a CDN deployment like this:
 <div id="calendar"></div>
 <script>
   new FullCalendar.Calendar(document.getElementById("calendar"), {
+    plugins: [CalDavPlugin, LoadingPlugin, MultiColumnPlugin, YearViewPlugin],
+    headerToolbar: {
+      center: "title",
+      left: "prev,next today",
+      right: "multiCol,yearView",
+    },
     eventSources: [
       {
         url: "https://example.com/caldav/",
@@ -46,23 +52,16 @@ Easiest way is to use a CDN deployment like this:
         name: "My CalDav",
       },
     ],
-    plugins: [CalDavPlugin, LoadingPlugin, MultiColumnPlugin, YearViewPlugin],
-    headerToolbar: {
-      center: "title",
-      left: "prev,next today",
-      right:
-        "multiCol,yearView",
-    },
   }).render();
 </script>
 ```
 
 ## Development
 
-* checkout the source code
-* install the dependencies with `npm install`
-* start development with `npm start`
+- checkout the source code
+- install the dependencies with `npm install`
+- start development with `npm start`
 
 # ToDo
 
-* more documentation
+- more documentation

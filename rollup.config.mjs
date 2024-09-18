@@ -34,7 +34,7 @@ const plugins = [
   css({ minify: true }),
   terser(),
   // http server if watch mode
-  process.env.ROLLUP_WATCH && serve({ open: true, openPage: "/dist/" }),
+  process.env.ROLLUP_WATCH && serve({ contentBase: "dist" }),
 ];
 
 const createOutput = (input, name) => ({
