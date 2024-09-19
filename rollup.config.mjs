@@ -24,7 +24,7 @@ const plugins = [
       [
         "@babel/preset-env",
         {
-          corejs: "3.35",
+          corejs: "3.38",
           useBuiltIns: "entry",
         },
       ],
