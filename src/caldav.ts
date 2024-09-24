@@ -26,15 +26,12 @@ type EventSourceFetcherRes = {
 
 const httpUrl = /https?:\/\/\S+/;
 
-const namespaceResolver: XPathNSResolver = (prefix) =>
-  (prefix &&
-    {
-      a: "http://apple.com/ns/ical/",
-      c: "urn:ietf:params:xml:ns:caldav",
-      d: "DAV:",
-      n: "http://nextcloud.com/ns",
-    }[prefix]) ||
-  null;
+const NS = {
+  a: "http://apple.com/ns/ical/",
+  c: "urn:ietf:params:xml:ns:caldav",
+  d: "DAV:",
+};
+const resolver: XPathNSResolver = (prefix) => NS[prefix as string] || null;
 
 const basicIsoDate = (date: Date): string =>
   date.toISOString().replace(/-|:|\.\d\d\d/g, "");
@@ -94,10 +91,10 @@ const fetchConfig = (url: string): Promise<CalDavConfig> =>
     method: "PROPFIND",
     headers: [["Depth", "0"]],
     body:
-      '<propfind xmlns="DAV:">' +
+      `<propfind xmlns="${NS.d}">` +
       "<prop>" +
       "<displayname/>" +
-      '<calendar-color xmlns="http://apple.com/ns/ical/"/>' +
+      `<calendar-color xmlns="${NS.a}"/>` +
       "</prop>" +
       "</propfind>",
   })
@@ -106,8 +103,7 @@ const fetchConfig = (url: string): Promise<CalDavConfig> =>
       const parser = new DOMParser();
       const xml = parser.parseFromString(text, "text/xml");
       const stringVal = (xpath: string) =>
-        xml.evaluate(xpath, xml, namespaceResolver, XPathResult.STRING_TYPE)
-          .stringValue;
+        xml.evaluate(xpath, xml, resolver, XPathResult.STRING_TYPE).stringValue;
       return {
         name: stringVal(
           "/d:multistatus/d:response/d:propstat/d:prop/d:displayname"
@@ -126,18 +122,16 @@ const fetchData = (
     method: "REPORT",
     headers: [["Depth", "1"]],
     body:
-      '<calendar-query xmlns="urn:ietf:params:xml:ns:caldav">' +
-      '<prop xmlns="DAV:">' +
-      '<calendar-data xmlns="urn:ietf:params:xml:ns:caldav"/>' +
+      `<calendar-query xmlns="${NS.c}">` +
+      `<prop xmlns="${NS.d}">` +
+      `<calendar-data xmlns="${NS.c}"/>` +
       "</prop>" +
       "<filter>" +
       '<comp-filter name="VCALENDAR">' +
       '<comp-filter name="VEVENT">' +
-      '<time-range start="' +
-      basicIsoDate(range.start) +
-      '" end="' +
-      basicIsoDate(range.end) +
-      '"/>' +
+      `<time-range start="${basicIsoDate(range.start)}" end="${basicIsoDate(
+        range.end
+      )}"/>` +
       "</comp-filter>" +
       "</comp-filter>" +
       "</filter>" +
@@ -150,7 +144,7 @@ const fetchData = (
       const iter = xml.evaluate(
         "/d:multistatus/d:response/d:propstat/d:prop/c:calendar-data",
         xml,
-        namespaceResolver,
+        resolver,
         XPathResult.UNORDERED_NODE_ITERATOR_TYPE
       );
       const events: EventInput[] = [];
