@@ -7,7 +7,7 @@
     "@babel/preset-typescript": "7.24.7",
     "@fullcalendar/core": "6.1.15",
     "@rollup/plugin-babel": "6.0.4",
-    "@rollup/plugin-commonjs": "26.0.3",
+    "@rollup/plugin-commonjs": "28.0.0",
     "@rollup/plugin-node-resolve": "15.3.0",
     "@rollup/plugin-terser": "0.4.4",
     "core-js": "3.38.1",
