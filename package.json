@@ -12,7 +12,7 @@
     "@rollup/plugin-terser": "0.4.4",
     "core-js": "3.40.0",
     "ical.js": "2.1.0",
-    "rollup": "4.32.1",
+    "rollup": "4.34.1",
     "rollup-plugin-import-css": "3.5.8",
     "rollup-plugin-serve": "3.0.0",
     "tslib": "2.8.1",
