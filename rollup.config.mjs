@@ -16,21 +16,7 @@ const globals = {
 const plugins = [
   resolve({ extensions }),
   commonjs(),
-  babel({
-    babelHelpers: "bundled",
-    extensions,
-    presets: [
-      "@babel/preset-typescript",
-      [
-        "@babel/preset-env",
-        {
-          corejs: "3.38",
-          useBuiltIns: "entry",
-        },
-      ],
-    ],
-    targets: "defaults",
-  }),
+  babel({ babelHelpers: "bundled", extensions, targets: "defaults" }),
   css({ minify: true }),
   terser(),
   // http server if watch mode
