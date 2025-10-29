@@ -1,9 +1,4 @@
-import {
-  CalendarApi,
-  EventInput,
-  EventSourceInput,
-  createPlugin,
-} from "@fullcalendar/core";
+import { EventInput, createPlugin } from "@fullcalendar/core";
 import { DateRange, EventSourceDef } from "@fullcalendar/core/internal";
 import "core-js/stable";
 import ICAL from "ical.js";
@@ -65,26 +60,35 @@ const createEvent = (
   event: ICAL.Event,
   start?: ICAL.Time,
   end?: ICAL.Time
-): EventInput =>
-  Object.assign(
-    {
-      end: end?.toString() || event.endDate.toString(),
-      start: start?.toString() || event.startDate.toString(),
-      title: event.summary,
-      extendedProperties: {
-        categories:
-          event.component.getFirstProperty("categories")?.jCal.slice(3) || [],
-        description: event.description,
-        location: event.location,
-        organizer: event.organizer,
-        status: event.component.getFirstPropertyValue("status"),
-      },
+): EventInput => {
+  const result: EventInput = {
+    end: end?.toString() || event.endDate.toString(),
+    start: start?.toString() || event.startDate.toString(),
+    title: event.summary,
+    extendedProps: {
+      attendees: Object.fromEntries(
+        event.attendees.map((_) => [
+          _.getFirstValue(),
+          _.getFirstParameter("partstat"),
+        ])
+      ),
+      categories:
+        event.component.getFirstProperty("categories")?.jCal.slice(3) || [],
+      description: event.description,
+      location: event.location,
+      organizer: event.organizer,
+      status: event.component.getFirstPropertyValue("status"),
     },
-    event.color && { color: event.color },
-    event.description?.search(httpUrl) >= 0 && {
-      url: event.description?.match(httpUrl)?.[0],
-    }
-  );
+  };
+  if (event.color) {
+    result.color = event.color;
+  }
+  if (event.description?.search(httpUrl) >= 0) {
+    result.url = event.description?.match(httpUrl)?.[0];
+  }
+  result.extendedProperties = result.extendedProps; // compatibility
+  return result;
+};
 
 const fetchConfig = (url: string): Promise<CalDavConfig> =>
   fetch(url, {
@@ -150,8 +154,17 @@ const fetchData = (
       const events: EventInput[] = [];
       let node: Node | null;
       while ((node = iter.iterateNext())) {
-        node.textContent &&
-          events.push(parseIcal(node.textContent, range.start, range.end));
+        if (!node.textContent) continue;
+        const uri =
+          node.parentNode?.parentNode?.parentNode?.querySelector(
+            "href"
+          )?.textContent;
+        const event = parseIcal(node.textContent, range.start, range.end);
+        event.forEach((_) => {
+          if (!_.extendedProps) _.extendedProps = {};
+          _.extendedProps.caldavUri = uri;
+        });
+        events.push(event);
       }
       return { rawEvents: events.flat() };
     });
@@ -192,25 +205,7 @@ const sourceDef: EventSourceDef<CalDavMeta> = {
   },
 };
 
-const initSourceAsync = (
-  cal: CalendarApi,
-  url: string,
-  custom?: EventSourceInput
-) => {
-  console.warn(
-    "[CalDavPlugin]",
-    "The method CalDavPlugin.initSourceAsync is deprecated, CalDav config is now also fetched when added with the default way."
-  );
-  fetchConfig(url).then((config) => {
-    const refined = Object.assign(config, custom, { url, format: "caldav" });
-    cal.addEventSource(refined);
-  });
-};
-
-export default Object.assign(
-  createPlugin({
-    name: "CalDavPlugin",
-    eventSourceDefs: [sourceDef],
-  }),
-  { initSourceAsync }
-);
+export default createPlugin({
+  name: "CalDavPlugin",
+  eventSourceDefs: [sourceDef],
+});
