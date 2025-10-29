@@ -4,6 +4,7 @@ import resolve from "@rollup/plugin-node-resolve";
 import terser from "@rollup/plugin-terser";
 import css from "rollup-plugin-import-css";
 import serve from "rollup-plugin-serve";
+import demoserver from "./demo/server.js";
 
 const extensions = [".js", ".jsx", ".ts", ".tsx"];
 
@@ -19,8 +20,8 @@ const plugins = [
   babel({ babelHelpers: "bundled", extensions, targets: "defaults" }),
   css({ minify: true }),
   terser(),
-  // http server if watch mode
-  process.env.ROLLUP_WATCH && serve({ contentBase: "dist" }),
+  process.env.ROLLUP_WATCH &&
+    serve({ contentBase: "dist", onListening: demoserver }),
 ];
 
 const createOutput = (input, name) => ({

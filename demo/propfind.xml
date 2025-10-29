@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<d:multistatus xmlns:d="DAV:" xmlns:s="http://sabredav.org/ns"
+    xmlns:cal="urn:ietf:params:xml:ns:caldav" xmlns:cs="http://calendarserver.org/ns/"
+    xmlns:oc="http://owncloud.org/ns" xmlns:nc="http://nextcloud.org/ns">
+    <d:response>
+        <d:href>/remote.php/dav/public-calendars/4HYt8RamSNZG3yjp/</d:href>
+        <d:propstat>
+            <d:prop>
+                <d:displayname>Democalendar</d:displayname>
+                <x1:calendar-color xmlns:x1="http://apple.com/ns/ical/">#C3544A</x1:calendar-color>
+            </d:prop>
+            <d:status>HTTP/1.1 200 OK</d:status>
+        </d:propstat>
+    </d:response>
+</d:multistatus>
