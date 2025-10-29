@@ -64,7 +64,7 @@ const createEvent = (
   const result: EventInput = {
     end: end?.toString() || event.endDate.toString(),
     start: start?.toString() || event.startDate.toString(),
-    title: event.summary,
+    title: event.summary || "",
     extendedProps: {
       attendees: Object.fromEntries(
         event.attendees.map((_) => [
