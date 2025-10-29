@@ -61,7 +61,11 @@ const create = (auth: string, organizer: string, attendee: string) =>
     name: "ClaimPlugin",
     contextInit(context) {
       context.calendarApi.setOption("eventClick", (arg: EventClickArg) => {
-        if (arg.event.display === "background" || arg.event.title) return;
+        if (
+          arg.event.display === "background" ||
+          (arg.event.title && arg.event.title !== "null")
+        )
+          return;
         claim(arg.event, { auth, organizer, attendee });
       });
     },
