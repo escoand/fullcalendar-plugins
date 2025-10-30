@@ -120,7 +120,11 @@ class CalDavInteractionPlugin {
               this._calendars.splice(idx, 1);
             }
             this._calendars.unshift(calendarUrl);
-            return Promise.resolve({ ...event, caldav, caldavUrl: eventUrl });
+            return Promise.resolve({
+              ...event,
+              caldav,
+              caldavUrl: eventUrl,
+            } as EventFindResult);
           } else {
             return Promise.reject();
           }
