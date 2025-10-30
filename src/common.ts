@@ -3,6 +3,7 @@ import {
   BgEvent,
   DateProfile,
   DateRange,
+  Seg,
   StandardEvent,
   ViewContext,
   ViewProps,
@@ -64,13 +65,14 @@ export const namespaceResolver: XPathNSResolver = (prefix) =>
 function createProps(event: EventRenderRange) {
   const today = getFullDayRange();
   const meta = getDateMeta(event.instance.range.start, today);
-  return Object.assign(meta, {
+  return {
+    ...meta,
     seg: {
-      isStart: event.instance.range.start >= today.start,
-      isEnd: event.instance.range.end <= today.end,
+      isStart: event.instance?.range.start >= today.start,
+      isEnd: event.instance?.range.end <= today.end,
       eventRange: event,
-    },
-  });
+    } as Seg,
+  };
 }
 
 export function getFullDayRange(date?: Date, offset?: number): DateRange {
@@ -99,7 +101,7 @@ export function EventListCellComponent(props: EventListProps) {
 
 export function BackgroundEventComponent(props: BackgroundEventProps) {
   const { events } = props;
-  if (events.length === 0) return;
+  if (!events || events.length === 0) return;
   const childProps = createProps(events[0]);
   return h(BgEvent, childProps);
 }
@@ -107,15 +109,13 @@ export function BackgroundEventComponent(props: BackgroundEventProps) {
 export function EventComponent(props: EventProps) {
   const { event } = props;
   const childProps = createProps(event);
-  return h(
-    StandardEvent,
-    Object.assign(childProps, {
-      defaultTimeFormat: DEFAULT_TIME_FORMATTER,
-      elClasses: ["fc-h-event"],
-      isDragging: false,
-      isResizing: false,
-      isDateSelecting: false,
-      isSelected: false,
-    })
-  );
+  return h(StandardEvent, {
+    ...childProps,
+    defaultTimeFormat: DEFAULT_TIME_FORMATTER,
+    elClasses: ["fc-h-event"],
+    isDragging: false,
+    isResizing: false,
+    isDateSelecting: false,
+    isSelected: false,
+  });
 }
