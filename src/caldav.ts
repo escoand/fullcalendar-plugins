@@ -2,6 +2,7 @@ import { EventInput, createPlugin } from "@fullcalendar/core";
 import { DateRange, EventSourceDef } from "@fullcalendar/core/internal";
 import "core-js/stable";
 import ICAL from "ical.js";
+import { namespaceResolver, namespaces } from "./common";
 
 type CalDavMeta = {
   url: string;
@@ -20,13 +21,6 @@ type EventSourceFetcherRes = {
 };
 
 const httpUrl = /https?:\/\/\S+/;
-
-const NS = {
-  a: "http://apple.com/ns/ical/",
-  c: "urn:ietf:params:xml:ns:caldav",
-  d: "DAV:",
-};
-const resolver: XPathNSResolver = (prefix) => NS[prefix as string] || null;
 
 const basicIsoDate = (date: Date): string =>
   date.toISOString().replace(/-|:|\.\d\d\d/g, "");
@@ -65,6 +59,7 @@ const createEvent = (
     end: end?.toString() || event.endDate.toString(),
     start: start?.toString() || event.startDate.toString(),
     title: event.summary || "",
+    id: event.uid,
     extendedProps: {
       attendees: Object.fromEntries(
         event.attendees.map((_) => [
@@ -93,21 +88,22 @@ const createEvent = (
 const fetchConfig = (url: string): Promise<CalDavConfig> =>
   fetch(url, {
     method: "PROPFIND",
-    headers: [["Depth", "0"]],
+    headers: { Depth: "0" },
     body:
-      `<propfind xmlns="${NS.d}">` +
-      "<prop>" +
-      "<displayname/>" +
-      `<calendar-color xmlns="${NS.a}"/>` +
-      "</prop>" +
-      "</propfind>",
+      `<d:propfind xmlns:a="${namespaces.a}" xmlns:d="${namespaces.d}">` +
+      "<d:prop>" +
+      "<d:displayname/>" +
+      `<a:calendar-color/>` +
+      "</d:prop>" +
+      "</d:propfind>",
   })
     .then((response) => response.text())
     .then((text): CalDavConfig => {
       const parser = new DOMParser();
       const xml = parser.parseFromString(text, "text/xml");
       const stringVal = (xpath: string) =>
-        xml.evaluate(xpath, xml, resolver, XPathResult.STRING_TYPE).stringValue;
+        xml.evaluate(xpath, xml, namespaceResolver, XPathResult.STRING_TYPE)
+          .stringValue;
       return {
         name: stringVal(
           "/d:multistatus/d:response/d:propstat/d:prop/d:displayname"
@@ -124,22 +120,22 @@ const fetchData = (
 ): Promise<EventSourceFetcherRes> =>
   fetch(url, {
     method: "REPORT",
-    headers: [["Depth", "1"]],
+    headers: { Depth: "1" },
     body:
-      `<calendar-query xmlns="${NS.c}">` +
-      `<prop xmlns="${NS.d}">` +
-      `<calendar-data xmlns="${NS.c}"/>` +
-      "</prop>" +
-      "<filter>" +
-      '<comp-filter name="VCALENDAR">' +
-      '<comp-filter name="VEVENT">' +
-      `<time-range start="${basicIsoDate(range.start)}" end="${basicIsoDate(
+      `<c:calendar-query xmlns:c="${namespaces.c}" xmlns:d="${namespaces.d}">` +
+      `<d:prop>` +
+      `<c:calendar-data/>` +
+      "</d:prop>" +
+      "<c:filter>" +
+      '<c:comp-filter name="VCALENDAR">' +
+      '<c:comp-filter name="VEVENT">' +
+      `<c:time-range start="${basicIsoDate(range.start)}" end="${basicIsoDate(
         range.end
       )}"/>` +
-      "</comp-filter>" +
-      "</comp-filter>" +
-      "</filter>" +
-      "</calendar-query>",
+      "</c:comp-filter>" +
+      "</c:comp-filter>" +
+      "</c:filter>" +
+      "</c:calendar-query>",
   })
     .then((response) => response.text())
     .then((text): EventSourceFetcherRes => {
@@ -148,7 +144,7 @@ const fetchData = (
       const iter = xml.evaluate(
         "/d:multistatus/d:response/d:propstat/d:prop/c:calendar-data",
         xml,
-        resolver,
+        namespaceResolver,
         XPathResult.UNORDERED_NODE_ITERATOR_TYPE
       );
       const events: EventInput[] = [];
@@ -159,10 +155,11 @@ const fetchData = (
           node.parentNode?.parentNode?.parentNode?.querySelector(
             "href"
           )?.textContent;
+        const eventUrl = new URL(uri, url).toString();
         const event = parseIcal(node.textContent, range.start, range.end);
         event.forEach((_) => {
           if (!_.extendedProps) _.extendedProps = {};
-          _.extendedProps.caldavUri = uri;
+          _.extendedProps.caldavUri = eventUrl;
         });
         events.push(event);
       }

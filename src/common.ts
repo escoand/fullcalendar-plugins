@@ -52,6 +52,15 @@ interface BackgroundEventProps {
   events?: EventRenderRange[];
 }
 
+export const namespaces = {
+  a: "http://apple.com/ns/ical/",
+  c: "urn:ietf:params:xml:ns:caldav",
+  d: "DAV:",
+};
+
+export const namespaceResolver: XPathNSResolver = (prefix) =>
+  namespaces[prefix as string] || null;
+
 function createProps(event: EventRenderRange) {
   const today = getFullDayRange();
   const meta = getDateMeta(event.instance.range.start, today);
