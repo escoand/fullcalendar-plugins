@@ -1,7 +1,9 @@
-import { EventInput, createPlugin } from "@fullcalendar/core";
+import { createPlugin, EventInput } from "@fullcalendar/core";
 import { DateRange, EventSourceDef } from "@fullcalendar/core/internal";
-import "core-js/stable";
-import ICAL from "ical.js";
+import {
+  expandICalEvents,
+  IcalExpander,
+} from "../deps/@fullcalendar/icalendar";
 import { namespaceResolver, namespaces } from "./common";
 
 type CalDavMeta = {
@@ -25,64 +27,35 @@ const httpUrl = /https?:\/\/\S+/;
 const basicIsoDate = (date: Date): string =>
   date.toISOString().replace(/-|:|\.\d\d\d/g, "");
 
-const parseIcal = (ical: string, start: Date, end: Date): EventInput[] => {
-  const jcal = ICAL.parse(ical);
-  const comp = new ICAL.Component(jcal);
-  return comp.getAllSubcomponents("vevent").flatMap((item) => {
-    const result: EventInput[] = [];
-    const event = new ICAL.Event(item);
-    if (event.isRecurring()) {
-      const _start = ICAL.Time.fromJSDate(start);
-      const _end = ICAL.Time.fromJSDate(end);
-      const iter = event.iterator();
-      let next = iter.next();
-      while (next && next.compare(_end) <= 0) {
-        if (next.compare(_start) >= 0) {
-          const occ = event.getOccurrenceDetails(next);
-          result.push(createEvent(occ.item, occ.startDate, occ.endDate));
-        }
-        next = iter.next();
-      }
-    } else if (!event.isRecurrenceException()) {
-      result.push(createEvent(event));
-    }
-    return result;
+const createEvent = (icsText: string, range: DateRange): EventInput => {
+  const expander = new IcalExpander({
+    ics: icsText,
+    skipInvalidDates: true,
   });
-};
-
-const createEvent = (
-  event: ICAL.Event,
-  start?: ICAL.Time,
-  end?: ICAL.Time
-): EventInput => {
-  const result: EventInput = {
-    end: end?.toString() || event.endDate.toString(),
-    start: start?.toString() || event.startDate.toString(),
-    title: event.summary || "",
-    id: event.uid,
-    extendedProps: {
-      attendees: Object.fromEntries(
-        event.attendees.map((_) => [
-          _.getFirstValue(),
-          _.getFirstParameter("partstat"),
-        ])
-      ),
-      categories:
-        event.component.getFirstProperty("categories")?.jCal.slice(3) || [],
-      description: event.description,
-      location: event.location,
-      organizer: event.organizer,
-      status: event.component.getFirstPropertyValue("status"),
-    },
-  };
-  if (event.color) {
-    result.color = event.color;
-  }
-  if (event.description?.search(httpUrl) >= 0) {
-    result.url = event.description?.match(httpUrl)?.[0];
-  }
-  result.extendedProperties = result.extendedProps; // compatibility
-  return result;
+  const results = expandICalEvents(expander, range);
+  results.forEach((result: EventInput, idx) => {
+    result.id = expander.events[idx].uid;
+    if (!result.extendedProps) result.extendedProps = {};
+    result.extendedProps.attendees = Object.fromEntries(
+      expander.events[idx].attendees.map((_) => [
+        _.getFirstValue(),
+        _.getFirstParameter("partstat"),
+      ])
+    );
+    result.extendedProps.categories =
+      expander.events[idx].component
+        .getFirstProperty("categories")
+        ?.jCal.slice(3) || [];
+    result.extendedProps.status =
+      expander.events[idx].component.getFirstPropertyValue("status");
+    if (expander.events[idx].color) {
+      result.color = expander.events[idx].color;
+    }
+    if (expander.events[idx].description?.search(httpUrl) >= 0) {
+      result.url = expander.events[idx].description?.match(httpUrl)?.[0];
+    }
+  });
+  return results;
 };
 
 const fetchConfig = (url: string): Promise<CalDavConfig> =>
@@ -151,17 +124,7 @@ const fetchData = (
       let node: Node | null;
       while ((node = iter.iterateNext())) {
         if (!node.textContent) continue;
-        const uri =
-          node.parentNode?.parentNode?.parentNode?.querySelector(
-            "href"
-          )?.textContent;
-        const eventUrl = new URL(uri, url).toString();
-        const event = parseIcal(node.textContent, range.start, range.end);
-        event.forEach((_) => {
-          if (!_.extendedProps) _.extendedProps = {};
-          _.extendedProps.caldavUri = eventUrl;
-        });
-        events.push(event);
+        events.push(createEvent(node.textContent, range));
       }
       return { rawEvents: events.flat() };
     });
