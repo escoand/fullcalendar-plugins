@@ -1,4 +1,4 @@
-import { createPlugin } from "@fullcalendar/core";
+import { createPlugin, EventClickArg } from "@fullcalendar/core";
 import {
   BaseComponent,
   TableDateCell,
@@ -14,6 +14,7 @@ import {
   EventListCellComponent,
   ExtendedViewProps,
   getFullDayRange,
+  EventComponent
 } from "./common";
 // @ts-expect-error
 import css from "./yearview.css";

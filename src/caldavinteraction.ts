@@ -2,6 +2,7 @@ import { createPlugin, EventClickArg } from "@fullcalendar/core/index.js";
 import { EventImpl } from "@fullcalendar/core/internal.js";
 import ICAL from "ical.js";
 import { namespaceResolver, namespaces } from "./common";
+import { getToken, startLogin } from "./nc_oauth";
 
 type CalDavInteractionConfig = {
   attendee: string;
@@ -35,6 +36,7 @@ class CalDavInteractionPlugin {
   }
 
   private get _auth() {
+    return "Bearer " + getToken();
     return "Basic " + btoa(this._config.username + ":" + this._config.password);
   }
 
@@ -137,6 +139,16 @@ class CalDavInteractionPlugin {
   private _promptTitle(arg: EventClickArg) {
     if (!this._isEditable(arg.event, "title")) {
       return;
+    } else if (getToken() === undefined) {
+      if (
+        confirm(
+          "Um zu bearbeiten musst du angemeldet sein. Du wirst weitergeleitet."
+        )
+      ) {
+        return startLogin();
+      } else {
+        return;
+      }
     }
     Promise.allSettled([
       this._queryCalendars(arg.event),

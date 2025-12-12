@@ -1,112 +1,132 @@
 <html>
-  <head>
-    <script src="https://cdn.jsdelivr.net/combine/npm/fullcalendar@6.1,npm/@fullcalendar/core@6.1/locales/de.global.min.js"></script>
-    <script src="caldav.js"></script>
-    <script src="loading.js"></script>
-    <script src="multicol.js"></script>
-    <script src="yearview.js"></script>
-    <style>
-      #calendar {
-        font-family: sans-serif;
+
+<head>
+  <script
+    src="https://cdn.jsdelivr.net/combine/npm/fullcalendar@6.1,npm/@fullcalendar/core@6.1/locales/de.global.min.js"></script>
+  <script src="caldav.js"></script>
+  <script src="caldavinteraction.js"></script>
+  <script src="loading.js"></script>
+  <script src="multicol.js"></script>
+  <script src="yearview.js"></script>
+  <style>
+    #calendar {
+      font-family: sans-serif;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="calendar"></div>
+  <script>
+    const cal = new FullCalendar.Calendar(
+      document.getElementById("calendar"),
+      {
+        // activate plugins
+        plugins: [
+          CalDavPlugin,
+          LoadingPlugin,
+          MultiColumnPlugin,
+          YearViewPlugin,
+          CalDavInteractionPlugin({
+            prompt: "Wer übernimmt diese Aufgabe?",
+            username: "lutherKalender",
+            password: "Hd74e-xtP8w-6fMME-exz3g-EE8Rb",
+            prompt: "Wer übernimmt diese Aufgabe?",
+            organizer: "mailto:passtschu@freenet.de",
+            attendee: "mailto:andreas@familiesc.de"
+          })
+        ],
+
+        // configure CalDav calendars
+        eventSources: [
+          {
+            url: "https://fullcalendar.io/api/demo-feeds/events.json",
+            name: "Demo",
+          },
+          // CalDav calendar
+          {
+            url: "/caldav",
+            format: "caldav",
+            name: "Custom CalDav",
+          },
+          {
+            url: "https://cloud.lutherkirche-hasslau.de/remote.php/dav/public-calendars/MZJmKWzT8y7NRGeC",
+            format: "caldav",
+            name: "Lesung",
+            display: "block",
+            titleEditable: true
+          },
+        ],
+
+        // add multiCol and yearView to toolbar
+        headerToolbar: {
+          center: "title",
+          left: "prev,next today",
+          right:
+            "addCalDav multiCol,yearView listWeek,timeGridWeek,dayGridWeek,dayGridMonth,multiMonthYear",
+        },
+
+        // default settings
+        displayEventEnd: false,
+        eventTimeFormat: {
+          hour: "2-digit",
+          hour12: false,
+          minute: "2-digit",
+          meridiem: false,
+        },
+        weekNumbers: true,
+
+        // custom test settings
+        customButtons: {
+          addCalDav: {
+            text: "+CalDav",
+            click: function () {
+              const url = prompt("Please enter a CalDav URL.");
+              if (url) {
+                cal.addEventSource({ url, format: "caldav" });
+              }
+            },
+          },
+        },
+        eventContent: function (arg) {
+          return {
+            html:
+              '<div style="display:inline-block;overflow:hidden;width:100%;"><b>' +
+              arg.timeText +
+              "</b> " +
+              arg.event.title +
+              (arg.event.extendedProps?.location
+                ? ' <i style="display:inline-block;float:right">' +
+                arg.event.extendedProps?.location +
+                "</i>"
+                : "") +
+              "</div>",
+          };
+        },
+        events: [
+          {
+            start: new Date().setUTCHours(10, 0, 0, 0),
+            end: new Date().setUTCHours(12, 0, 0, 0),
+            title: "Test event",
+            color: "orange",
+          },
+          {
+            start: new Date().setUTCDate(new Date().getUTCDate() + 3),
+            end: new Date().setUTCDate(new Date().getUTCDate() + 4),
+            display: "background",
+            color: "#ff9f89",
+          },
+          {
+            start: new Date().setUTCDate(new Date().getUTCDate() + 7),
+            end: new Date().setUTCDate(new Date().getUTCDate() + 10),
+            overlap: false,
+            display: "background",
+          },
+        ],
       }
-    </style>
-  </head>
-  <body>
-    <div id="calendar"></div>
-    <script>
-      const cal = new FullCalendar.Calendar(
-        document.getElementById("calendar"),
-        {
-          // activate plugins
-          plugins: [
-            CalDavPlugin,
-            LoadingPlugin,
-            MultiColumnPlugin,
-            YearViewPlugin,
-          ],
+    );
+    cal.render();
+  </script>
+</body>
 
-          // configure CalDav calendars
-          eventSources: [
-            {
-              url: "https://fullcalendar.io/api/demo-feeds/events.json",
-              name: "Demo",
-            },
-            // CalDav calendar
-            /*{
-              url: "https://...",
-              format: "caldav",
-              name: "Custom CalDav"
-            }*/
-          ],
-
-          // add multiCol and yearView to toolbar
-          headerToolbar: {
-            center: "title",
-            left: "prev,next today",
-            right:
-              "addCalDav multiCol,yearView listWeek,timeGridWeek,dayGridWeek,dayGridMonth,multiMonthYear",
-          },
-
-          // default settings
-          displayEventEnd: false,
-          eventTimeFormat: {
-            hour: "2-digit",
-            hour12: false,
-            minute: "2-digit",
-            meridiem: false,
-          },
-          weekNumbers: true,
-
-          // custom test settings
-          customButtons: {
-            addCalDav: {
-              text: "+CalDav",
-              click: function () {
-                const url = prompt("Please enter a CalDav URL.");
-                if (url) {
-                  cal.addEventSource({ url, format: "caldav" });
-                }
-              },
-            },
-          },
-          eventContent(arg) {
-            return {
-              html:
-                '<div style="display:inline-block;overflow:hidden;width:100%;"><b>' +
-                arg.timeText +
-                "</b> " +
-                arg.event.title +
-                (arg.event.extendedProps?.location
-                  ? ' <i style="display:inline-block;float:right">' +
-                    arg.event.extendedProps?.location +
-                    "</i>"
-                  : "") +
-                "</div>",
-            };
-          },
-          events: [
-            {
-              start: new Date().setUTCHours(10, 0, 0, 0),
-              end: new Date().setUTCHours(12, 0, 0, 0),
-              title: "Test event",
-              color: "orange",
-            },
-            {
-              start: new Date().setUTCDate(new Date().getUTCDate() + 3),
-              end: new Date().setUTCDate(new Date().getUTCDate() + 4),
-              display: "background",
-              color: "#ff9f89",
-            },
-            {
-              start: new Date().setUTCDate(new Date().getUTCDate() + 7),
-              end: new Date().setUTCDate(new Date().getUTCDate() + 10),
-              overlap: false,
-              display: "background",
-            },
-          ],
-        }
-      );
-      cal.render();
-    </script>
-  </body>
 </html>

@@ -147,7 +147,7 @@ const fetchData = (
         namespaceResolver,
         XPathResult.UNORDERED_NODE_ITERATOR_TYPE
       );
-      const events: EventInput[] = [];
+      const result: EventInput[] = [];
       let node: Node | null;
       while ((node = iter.iterateNext())) {
         if (!node.textContent) continue;
@@ -156,14 +156,14 @@ const fetchData = (
             "href"
           )?.textContent;
         const eventUrl = new URL(uri, url).toString();
-        const event = parseIcal(node.textContent, range.start, range.end);
-        event.forEach((_) => {
+        const events = createEvent(node.textContent, range);
+        events.forEach((_) => {
           if (!_.extendedProps) _.extendedProps = {};
           _.extendedProps.caldavUri = eventUrl;
         });
-        events.push(event);
+        result.push(events);
       }
-      return { rawEvents: events.flat() };
+      return { rawEvents: result.flat() };
     });
 
 const sourceDef: EventSourceDef<CalDavMeta> = {

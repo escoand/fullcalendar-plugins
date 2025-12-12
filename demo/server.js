@@ -1,5 +1,5 @@
-import crypto from "crypto";
-import fs from "fs";
+import crypto from "node:crypto";
+import fs from "node:fs";
 
 const basicIsoDate = (date) => date.toISOString().replace(/-|:|\.\d\d\d/g, "");
 
