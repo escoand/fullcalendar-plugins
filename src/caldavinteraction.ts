@@ -2,24 +2,26 @@ import { createPlugin, EventClickArg } from "@fullcalendar/core/index.js";
 import { EventImpl } from "@fullcalendar/core/internal.js";
 import ICAL from "ical.js";
 import { namespaceResolver, namespaces } from "./common";
-import { getToken, startLogin } from "./nc_oauth";
 
 type CalDavInteractionConfig = {
   attendee: string;
   organizer: string;
-  password: string;
   prompt: string;
-  username: string;
 };
 
-type EventFindResult = EventImpl & {
+type EventFindResult = {
   caldav: string;
   caldavUrl: string;
+  event: EventImpl;
 };
 
 class CalDavInteractionPlugin {
   private _config: CalDavInteractionConfig;
+  private _principal?: string;
+  private _username?: string;
+  private _calendarHome?: string;
   private _calendars: string[] = [];
+  private _authProvider?: CalDavAuthProvider;
 
   constructor(config: CalDavInteractionConfig) {
     this._config = config;
@@ -27,59 +29,116 @@ class CalDavInteractionPlugin {
 
   static build(name: string, config: CalDavInteractionConfig) {
     const cp = new CalDavInteractionPlugin(config);
-    return createPlugin({
+    const plugin = createPlugin({
       name,
       contextInit(context) {
         context.calendarApi.setOption("eventClick", cp._promptTitle.bind(cp));
       },
     });
+    plugin.setAuthProvider = cp.setAuthProvider.bind(cp);
+    return plugin;
   }
 
-  private get _auth() {
-    return "Bearer " + getToken();
-    return "Basic " + btoa(this._config.username + ":" + this._config.password);
+  setAuthProvider(authProvider: CalDavAuthProvider) {
+    this._authProvider = authProvider;
   }
 
-  private _queryCalendars(event: EventImpl) {
-    if (Object.keys(this._calendars).length)
-      return Promise.resolve(this._calendars);
+  private _getAuth() {
+    return this._authProvider?.getAuth() || "";
+  }
 
-    const url = new URL(
-      `/remote.php/dav/calendars/${this._config.username}/`,
-      event.extendedProps.caldavUri
-    );
+  private _fetchPropfind(event: EventImpl, uri: string, body: string) {
+    const url = new URL(uri, event.source?.url);
 
     return fetch(url, {
       method: "PROPFIND",
-      headers: { Authorization: this._auth, Depth: "1" },
+      headers: { Authorization: this._getAuth(), Depth: "1" },
       body:
-        `<d:propfind xmlns:d="${namespaces.d}">` +
+        `<d:propfind xmlns:c="${namespaces.c}" xmlns:d="${namespaces.d}">` +
         "<d:prop>" +
-        "<d:displayname/>" +
+        body +
         "</d:prop>" +
         "</d:propfind>",
     })
-      .then((res) => res.text())
-      .then((text) => {
-        const parser = new DOMParser();
-        const xml = parser.parseFromString(text, "text/xml");
-        const iter = xml.evaluate(
-          "/d:multistatus/d:response/d:propstat/d:prop/d:displayname",
-          xml,
-          namespaceResolver,
-          XPathResult.UNORDERED_NODE_ITERATOR_TYPE
-        );
-        let node: Node | null;
-        while ((node = iter.iterateNext())) {
-          if (!node.textContent) continue;
-          const uri = node.parentNode?.parentNode?.parentNode?.querySelector(
-            "href"
-          )?.textContent as string;
-          const calendarUrl = new URL(uri, url).toString();
-          this._calendars.push(calendarUrl);
-        }
-        return this._calendars;
-      });
+      .then((res) =>
+        res.ok
+          ? res.text()
+          : Promise.reject("error " + res.status + ": " + res.statusText)
+      )
+      .then((text) => new DOMParser().parseFromString(text, "text/xml"));
+  }
+
+  private _queryPrinicpal(event: EventImpl) {
+    if (this._principal) {
+      return Promise.resolve(this._principal);
+    }
+
+    return this._fetchPropfind(
+      event,
+      "/remote.php/dav/",
+      "<d:current-user-principal/>"
+    ).then((xml) => {
+      this._principal = stringVal(
+        xml,
+        "/d:multistatus/d:response/d:propstat/d:prop/d:current-user-principal/d:href"
+      );
+      return this._principal;
+    });
+  }
+
+  private _queryCalendarHome(event: EventImpl) {
+    if (this._calendarHome) {
+      return Promise.resolve(this._calendarHome);
+    } else if (!this._principal) {
+      return Promise.reject();
+    }
+
+    return this._fetchPropfind(
+      event,
+      this._principal,
+      "<c:calendar-home-set/><d:displayname/>"
+    ).then((xml) => {
+      this._calendarHome = stringVal(
+        xml,
+        "/d:multistatus/d:response/d:propstat/d:prop/c:calendar-home-set/d:href"
+      );
+      this._username = stringVal(
+        xml,
+        "/d:multistatus/d:response/d:propstat/d:prop/d:displayname"
+      );
+      return this._calendarHome;
+    });
+  }
+
+  private _queryCalendars(event: EventImpl) {
+    if (Object.keys(this._calendars).length) {
+      return Promise.resolve(this._calendars);
+    } else if (!this._calendarHome) {
+      return Promise.reject();
+    }
+
+    return this._fetchPropfind(
+      event,
+      this._calendarHome,
+      "<d:displayname/>"
+    ).then((xml) => {
+      const iter = xml.evaluate(
+        "/d:multistatus/d:response/d:propstat/d:prop/d:displayname",
+        xml,
+        namespaceResolver,
+        XPathResult.UNORDERED_NODE_ITERATOR_TYPE
+      );
+      let node: Node | null;
+      while ((node = iter.iterateNext())) {
+        if (!node.textContent) continue;
+        const uri = node.parentNode?.parentNode?.parentNode?.querySelector(
+          "href"
+        )?.textContent as string;
+        const calendarUrl = new URL(uri, event.source?.url).toString();
+        this._calendars.push(calendarUrl);
+      }
+      return this._calendars;
+    });
   }
 
   private _findEvent(event: EventImpl) {
@@ -90,7 +149,7 @@ class CalDavInteractionPlugin {
 
       return fetch(calendarUrl, {
         method: "REPORT",
-        headers: { Authorization: this._auth, Depth: "1" },
+        headers: { Authorization: this._getAuth(), Depth: "1" },
         body:
           `<c:calendar-query xmlns:c="${namespaces.c}" xmlns:d="${namespaces.d}">` +
           "<d:prop>" +
@@ -114,7 +173,7 @@ class CalDavInteractionPlugin {
           const caldav = stringVal(
             xml,
             "/d:multistatus/d:response/d:propstat/d:prop/c:calendar-data"
-          );
+          )?.replace(/;=TRUE([;:])/, "$1");
           if (url && caldav) {
             const eventUrl = new URL(url, calendarUrl).toString();
             let idx;
@@ -123,9 +182,9 @@ class CalDavInteractionPlugin {
             }
             this._calendars.unshift(calendarUrl);
             return Promise.resolve({
-              ...event,
               caldav,
               caldavUrl: eventUrl,
+              event,
             } as EventFindResult);
           } else {
             return Promise.reject();
@@ -136,38 +195,47 @@ class CalDavInteractionPlugin {
     return search();
   }
 
+  private _login() {
+    if (
+      confirm(
+        "Um zu bearbeiten musst du angemeldet sein. Du wirst weitergeleitet."
+      )
+    )
+      this._authProvider.startLogin();
+  }
+
   private _promptTitle(arg: EventClickArg) {
     if (!this._isEditable(arg.event, "title")) {
       return;
-    } else if (getToken() === undefined) {
-      if (
-        confirm(
-          "Um zu bearbeiten musst du angemeldet sein. Du wirst weitergeleitet."
-        )
-      ) {
-        return startLogin();
-      } else {
-        return;
-      }
+    } else if (this._authProvider && !this._authProvider?.isLoggedIn()) {
+      return this._login();
     }
-    Promise.allSettled([
-      this._queryCalendars(arg.event),
-      new Promise<string>((resolve, reject) => {
-        const input = prompt(this._config.prompt, arg.event.title);
-        input !== null ? resolve(input) : reject();
-      }),
-    ]).then(([_, name]) => {
-      name.status === "fulfilled" &&
-        this._findEvent(arg.event).then((event) =>
-          this._updateEvent(event, "summary", name.value)
-        );
-    });
+    // principal
+    this._queryPrinicpal(arg.event)
+      // calendar home
+      .then(() => this._queryCalendarHome(arg.event))
+      // calendars
+      .then(() =>
+        Promise.allSettled([
+          this._queryCalendars(arg.event),
+          new Promise<string>((resolve, reject) => {
+            const input = prompt(this._config.prompt, arg.event.title);
+            input !== null ? resolve(input) : reject();
+          }),
+        ])
+      )
+      .then(([_, name]) => {
+        name.status === "fulfilled" &&
+          this._findEvent(arg.event)
+            .then((event) => this._updateEvent(event, "summary", name.value))
+            .catch(() => console.warn("event not found", arg.event));
+      })
+      .catch(() => this._login());
   }
 
   private _isEditable(event: EventImpl, property: string) {
     return (
       event.display !== "background" &&
-      event.extendedProps.caldavUri &&
       (event.extendedProps[`${property.toLowerCase()}Editable`] === true ||
         event.source?.internalEventSource.extendedProps[
           `${property.toLowerCase()}Editable`
@@ -176,11 +244,11 @@ class CalDavInteractionPlugin {
   }
 
   private _updateEvent(
-    event: EventFindResult,
+    findResult: EventFindResult,
     property: string,
     value: string
   ) {
-    const jcal = ICAL.parse(event.caldav);
+    const jcal = ICAL.parse(findResult.caldav);
     const vcalendar = new ICAL.Component(jcal);
     const vevent = vcalendar.getFirstSubcomponent("vevent");
     const prevValue = vevent?.getFirstPropertyValue(property);
@@ -196,24 +264,25 @@ class CalDavInteractionPlugin {
     vprop1?.setParameter("PARTSTAT", "NEEDS-ACTION");
     vprop1?.setParameter("ROLE", "REQ-PARTICIPANT");
     vprop1?.setParameter("RSVP", "TRUE");
-    vprop1?.setParameter("", "TRUE");
     const vprop2 = vevent?.addPropertyWithValue("X-OLD-" + property, prevValue);
     vprop2?.setParameter("MODIFIED", new Date().toISOString());
 
-    return fetch(event.caldavUrl, {
+    return fetch(findResult.caldavUrl, {
       method: "PUT",
       headers: {
-        Authorization: this._auth,
+        Authorization: this._getAuth(),
         "Content-Type": "text/calendar",
       },
       body: vcalendar.toString(),
-    }).then((response) =>
-      response.ok
-        ? event.source?.refetch()
-        : Promise.reject(
-            `unable to update caldav event: ${response.statusText} (${response.status})`
-          )
-    );
+    })
+      .then((response) => {
+        response.ok
+          ? findResult.event.source?.refetch()
+          : Promise.reject(
+              `unable to update caldav event: ${response.statusText} (${response.status})`
+            );
+      })
+      .catch(console.error);
   }
 }
 

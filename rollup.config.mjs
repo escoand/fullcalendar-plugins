@@ -44,4 +44,5 @@ export default [
   createOutput("src/loading.ts", "LoadingPlugin"),
   createOutput("src/multicol.ts", "MultiColumnPlugin"),
   createOutput("src/yearview.ts", "YearViewPlugin"),
+  createOutput("src/auth/nextcloud.ts", "NextcloudAuth"),
 ];
