@@ -1,5 +1,5 @@
 interface CalDavAuthProvider {
   isLoggedIn(): boolean;
-  getAuth(): string | null;
+  getAuth(): string | undefined;
   startLogin(): void;
 }
