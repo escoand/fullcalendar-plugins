@@ -40,9 +40,9 @@ const createOutput = (input, name) => ({
 
 export default [
   createOutput("src/caldav.ts", "CalDavPlugin"),
-  createOutput("src/edittitle.ts", "TitleEditPlugin"),
   createOutput("src/loading.ts", "LoadingPlugin"),
   createOutput("src/multicol.ts", "MultiColumnPlugin"),
   createOutput("src/yearview.ts", "YearViewPlugin"),
   createOutput("src/auth/nextcloud.ts", "NextcloudAuth"),
+  createOutput("src/interaction/dblclicking.ts", "EventDblClickPlugin"),
 ];

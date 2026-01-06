@@ -10,8 +10,10 @@ import {
   EventSourceDef,
 } from "@fullcalendar/core/internal";
 import * as ICAL from "ical.js";
-import { namespaceResolver, namespaces } from "./common";
 import { expandICalEvents, IcalExpander } from "./deps/@fullcalendar/icalendar";
+
+const DEFAULT_LOGIN_PROMPT = "You have to login first.";
+const DEFAULT_PERMISSION_DENIED = "You are not allowed to update this event.";
 
 type CalDavMeta = {
   auth?: CalDavAuthProvider;
@@ -40,6 +42,16 @@ type CaldavEvent = {
 };
 
 const httpUrl = /https?:\/\/\S+/;
+
+const namespaces = {
+  a: "http://apple.com/ns/ical/",
+  c: "urn:ietf:params:xml:ns:caldav",
+  d: "DAV:",
+};
+
+const namespaceResolver: XPathNSResolver = (prefix: string | null) =>
+  // @ts-ignore
+  namespaces[prefix] || null;
 
 const createEvent = (icsText: string, range: DateRange): EventInput => {
   const expander = new IcalExpander({
@@ -80,7 +92,7 @@ const fetchPropfind = (
 ) =>
   fetch(url, {
     method: "PROPFIND",
-    headers: { Authorization: auth, Depth: depth.toFixed() },
+    headers: { Authorization: auth || "", Depth: depth.toFixed() },
     body:
       `<d:propfind xmlns:a="${namespaces.a}" xmlns:c="${namespaces.c}" xmlns:d="${namespaces.d}">` +
       "<d:prop>" +
@@ -100,7 +112,7 @@ const fetchReport = (
 ): Promise<XPathResult> =>
   fetch(url, {
     method: "REPORT",
-    headers: { Authorization: auth, Depth: "1" },
+    headers: { Authorization: auth || "", Depth: "1" },
     body:
       `<c:calendar-query xmlns:c="${namespaces.c}" xmlns:d="${namespaces.d}">` +
       "<d:prop>" +
@@ -129,13 +141,13 @@ const fetchReport = (
       return iter;
     });
 
-const getConfig = (url: string): Promise<CalDavConfig> =>
+const getConfig = (url: string): Promise<CalDavConfig | undefined> =>
   fetchPropfind(
     url,
     "<a:calendar-color/>" +
       "<d:current-user-privilege-set/>" +
       "<d:displayname/>"
-  ).then((xml): CalDavConfig => {
+  ).then((xml): CalDavConfig | undefined => {
     const iter = xml.evaluate(
       "/d:multistatus/d:response/d:propstat",
       xml,
@@ -380,11 +392,28 @@ const onEventChange = (arg: EventChangeArg) => {
       if (error && error.response) {
         if (error.response.status === 401) {
           if (!props.auth) {
+            alert(
+              // @ts-expect-error
+              arg.event._context.options.authDeniedText ||
+                DEFAULT_PERMISSION_DENIED
+            );
             throw "Needs login but no authentication provider defined";
           } else {
-            return props.auth.startLogin();
+            if (
+              confirm(
+                // @ts-expect-error
+                arg.event._context.options.authPromptText ||
+                  DEFAULT_LOGIN_PROMPT
+              )
+            )
+              props.auth.startLogin();
           }
         } else if (error.response.status === 403) {
+          alert(
+            // @ts-expect-error
+            arg.event._context.options.authDeniedText ||
+              DEFAULT_PERMISSION_DENIED
+          );
           throw "Permission denied";
         }
       }
@@ -407,6 +436,7 @@ const sourceDef: EventSourceDef<CalDavMeta> = {
       src.extendedProps.fetchConfig = "done";
       getConfig(src.meta.url)
         .then((config) => {
+          if (!config) return Promise.reject();
           if (!src.extendedProps.name) {
             src.extendedProps.name = config.name;
           }
@@ -433,4 +463,8 @@ export default createPlugin({
   eventSourceDefs: [sourceDef],
   contextInit: (context: CalendarContext) =>
     context.calendarApi.setOption("eventChange", onEventChange),
+  optionRefiners: {
+    authDeniedText: (arg) => arg,
+    authPromptText: (arg) => arg,
+  },
 });

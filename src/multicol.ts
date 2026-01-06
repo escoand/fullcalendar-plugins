@@ -1,9 +1,9 @@
 import { createPlugin } from "@fullcalendar/core";
 import {
   BaseComponent,
-  TableDateCell,
-  ViewContext,
   sliceEventStore,
+  TableDateCell,
+  ViewContext
 } from "@fullcalendar/core/internal";
 import { ComponentChild, h } from "@fullcalendar/core/preact";
 import "core-js/stable";

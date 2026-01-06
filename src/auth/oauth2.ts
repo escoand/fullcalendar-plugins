@@ -1,4 +1,3 @@
-
 const SESSION_STORE = "_oauth2_session";
 
 type Oauth2Session = {
@@ -76,9 +75,6 @@ class Oauth2AuthProvider implements CalDavAuthProvider {
   }
 
   startLogin(): void {
-    const result = confirm("You need to login. You will be redirected.");
-    if (!result) return;
-
     generatePKCE().then(({ verifier, challenge }) => {
       const state = crypto.randomUUID();
 

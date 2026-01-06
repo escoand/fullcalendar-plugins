@@ -37,7 +37,7 @@ function listenBySelector(
   };
 }
 
-export class EventDblClicking extends Interaction {
+class EventDblClickInteraction extends Interaction {
   constructor(settings: InteractionSettings) {
     super(settings);
 
@@ -87,8 +87,8 @@ export class EventDblClicking extends Interaction {
 }
 
 export default createPlugin({
-  name: "EventDblClicking",
-  componentInteractions: [EventDblClicking],
+  name: "EventDblClickPlugin",
+  componentInteractions: [EventDblClickInteraction],
   listenerRefiners: {
     eventDblClick: identity as Identity<(arg: EventClickArg) => void>,
   },
