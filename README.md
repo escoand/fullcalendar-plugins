@@ -2,13 +2,33 @@
 
 Multiple https://fullcalendar.io plugins useable with just static HTML and JavaScript code for easy inclusion in existing web pages.
 
+## Source plugins
+
 ### CalDav plugin
 
 Adds the ability to use CalDav URLs as `eventSource`.
+With version 1.3 write support was added.
+
+#### OAuth2 authentication
+
+Allows to authenticate an user against an OAuth2 endpoint.
+
+#### Nextcloud authentication
+
+Allows to authenticate an user against an Nextcloud server using OAuth2.
+
+## Interaction plugins
+
+### Double click plugin
+
+Allows to use `eventDblClick` as event listener.
+
+## View plugins
 
 ### Loading plugin
 
-Shows a loading indicator when any of the event sources is loading. This is especially useful when using the CalDav plugin.
+Shows a loading indicator when any of the event sources is loading.
+This is especially useful when using the CalDav plugin.
 
 ### Multi column view plugin
 
@@ -33,27 +53,37 @@ Easiest way is to use a CDN deployment like this:
 ```html
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar"></script>
 <script src="https://cdn.jsdelivr.net/gh/escoand/fullcalendar-plugins/dist/caldav.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/escoand/fullcalendar-plugins/dist/dblclick.js"></script>
 <script src="https://cdn.jsdelivr.net/gh/escoand/fullcalendar-plugins/dist/loading.js"></script>
 <script src="https://cdn.jsdelivr.net/gh/escoand/fullcalendar-plugins/dist/multicol.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/escoand/fullcalendar-plugins/dist/nextcloud.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/escoand/fullcalendar-plugins/dist/oauth2.js"></script>
 <script src="https://cdn.jsdelivr.net/gh/escoand/fullcalendar-plugins/dist/yearview.js"></script>
 <div id="calendar"></div>
 <script>
   var cal = new FullCalendar.Calendar(document.getElementById("calendar"), {
-    plugins: [CalDavPlugin, LoadingPlugin, MultiColumnPlugin, YearViewPlugin],
+    plugins: [
+      CalDavPlugin,
+      EventDblClickPlugin,
+      LoadingPlugin,
+      MultiColumnPlugin,
+      YearViewPlugin
+    ],
     headerToolbar: {
       center: "title",
       left: "prev,next today",
       right: "multiCol,yearView",
     },
-    // since version 1.2 there are 3 ways to add CalDav calendars
     eventSources: [
-      // 1. add and fetch config (name and color) via CalDav
+      // add and fetch config (name and color) via CalDav
       {
         url: "https://example.com/caldav/",
         format: "caldav",
+        // authentication for write support
+        auth: NextcloudAuth("NEXTCLOUD_DOMAIN", "CLIENT_ID", "CLIENT_SECRET")
         // custom settings or override name and color
       },
-      // 2: add CalDav calendar and disable CalDav config fetch
+      // add CalDav calendar and disable CalDav config fetch
       {
         url: "https://example.com/caldav/",
         format: "caldav",
@@ -62,13 +92,11 @@ Easiest way is to use a CDN deployment like this:
         // ...
       },
     ],
+    // text to be shown at login, optional
+    authPromptText: "You have to login first.",
+    authDeniedText: "You are not allowed to update this event.",
   });
   cal.render();
-  // 3. add calendar asyncally and fetch config via CalDav
-  // (decrepated and will be removed)
-  CalDavPlugin.initSourceAsync(cal, "https://example.com/caldav/", {
-    // custom settings ...
-  });
 </script>
 ```
 

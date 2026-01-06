@@ -39,9 +39,11 @@ const createOutput = (input, name) => ({
 });
 
 export default [
-  createOutput("src/caldav.ts", "CalDavPlugin"),
-  createOutput("src/caldavinteraction.ts", "CalDavInteractionPlugin"),
-  createOutput("src/loading.ts", "LoadingPlugin"),
-  createOutput("src/multicol.ts", "MultiColumnPlugin"),
-  createOutput("src/yearview.ts", "YearViewPlugin"),
+  createOutput("src/auth/nextcloud.ts", "NextcloudAuth"),
+  createOutput("src/auth/oauth2.ts", "Oauth2Auth"),
+  createOutput("src/interaction/dblclick.ts", "EventDblClickPlugin"),
+  createOutput("src/source/caldav.ts", "CalDavPlugin"),
+  createOutput("src/view/loading.ts", "LoadingPlugin"),
+  createOutput("src/view/multicol.ts", "MultiColumnPlugin"),
+  createOutput("src/view/yearview.ts", "YearViewPlugin"),
 ];

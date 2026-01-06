@@ -1,112 +1,142 @@
 <html>
-  <head>
-    <script src="https://cdn.jsdelivr.net/combine/npm/fullcalendar@6.1,npm/@fullcalendar/core@6.1/locales/de.global.min.js"></script>
-    <script src="caldav.js"></script>
-    <script src="loading.js"></script>
-    <script src="multicol.js"></script>
-    <script src="yearview.js"></script>
-    <style>
-      #calendar {
-        font-family: sans-serif;
+
+<head>
+  <meta charset="utf-8">
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fullcalendar/core@6.1/locales/de.global.min.js"></script>
+  <script src="caldav.js"></script>
+  <script src="dblclicking.js"></script>
+  <script src="loading.js"></script>
+  <script src="multicol.js"></script>
+  <script src="nextcloud.js"></script>
+  <script src="oauth.js"></script>
+  <script src="yearview.js"></script>
+  <style>
+    #calendar {
+      font-family: sans-serif;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="calendar"></div>
+  <script>
+    // oauth2 authentication
+    const authNC = new NextcloudAuth("https://example.com", "CLIENT_ID", "CLIENT_SECRET");
+    const auth = new Oauth2Auth("https://example.com/real/auth", "https://example.com/real/token", "CLIENT_ID", "CLIENT_SECRET");
+    const cal = new FullCalendar.Calendar(
+      document.getElementById("calendar"),
+      {
+        // activate plugins
+        plugins: [
+          CalDavPlugin,
+          EventDblClickPlugin,
+          LoadingPlugin,
+          MultiColumnPlugin,
+          YearViewPlugin
+        ],
+
+        // configure CalDav calendars
+        eventSources: [
+          {
+            url: "https://fullcalendar.io/api/demo-feeds/events.json",
+            name: "Demo",
+          },
+          // CalDav calendar
+          {
+            url: "/caldav",
+            format: "caldav",
+            name: "Custom CalDav",
+          },
+        ],
+
+        // add multiCol and yearView to toolbar
+        headerToolbar: {
+          center: "title",
+          left: "prev,next today",
+          right:
+            "addCalDav multiCol,yearView listWeek,timeGridWeek,dayGridWeek,dayGridMonth,multiMonthYear",
+        },
+
+        // default settings
+        displayEventEnd: false,
+        eventTimeFormat: {
+          hour: "2-digit",
+          hour12: false,
+          minute: "2-digit",
+          meridiem: false,
+        },
+        weekNumbers: true,
+
+        // custom test settings
+        customButtons: {
+          addCalDav: {
+            text: "+CalDav",
+            click: function () {
+              const url = prompt("Please enter a CalDav URL.");
+              if (url) {
+                cal.addEventSource({ url, format: "caldav" });
+              }
+            },
+          },
+        },
+        eventContent: function (arg) {
+          return {
+            html:
+              '<div style="display:inline-block;overflow:hidden;width:100%;"><b>' +
+              arg.timeText +
+              "</b> " +
+              arg.event.title +
+              (arg.event.extendedProps?.location
+                ? ' <i style="display:inline-block;float:right">' +
+                arg.event.extendedProps?.location +
+                "</i>"
+                : "") +
+              "</div>",
+          };
+        },
+        eventDblClick: function (arg) {
+          const isEditable = (event, property) => {
+            return (
+              event.display !== "background" &&
+              (event.extendedProps[`${property.toLowerCase()}Editable`] === true ||
+                event.source?.internalEventSource.extendedProps[
+                `${property.toLowerCase()}Editable`
+                ] === true)
+            );
+          }
+          if (!isEditable(arg.event, "title")) {
+            return;
+          }
+          const input = prompt("Wer übernimmt diese Aufgabe?", arg.event.title);
+          if (input !== null && arg.event.title !== input) {
+            arg.event.setProp("title", input);
+          }
+        },
+        events: [
+          {
+            start: new Date().setUTCHours(10, 0, 0, 0),
+            end: new Date().setUTCHours(12, 0, 0, 0),
+            title: "Test event",
+            color: "orange",
+          },
+          {
+            start: new Date().setUTCDate(new Date().getUTCDate() + 3),
+            end: new Date().setUTCDate(new Date().getUTCDate() + 4),
+            display: "background",
+            color: "#ff9f89",
+          },
+          {
+            start: new Date().setUTCDate(new Date().getUTCDate() + 7),
+            end: new Date().setUTCDate(new Date().getUTCDate() + 10),
+            overlap: false,
+            display: "background",
+          },
+        ],
       }
-    </style>
-  </head>
-  <body>
-    <div id="calendar"></div>
-    <script>
-      const cal = new FullCalendar.Calendar(
-        document.getElementById("calendar"),
-        {
-          // activate plugins
-          plugins: [
-            CalDavPlugin,
-            LoadingPlugin,
-            MultiColumnPlugin,
-            YearViewPlugin,
-          ],
+    );
+    cal.render();
+  </script>
+</body>
 
-          // configure CalDav calendars
-          eventSources: [
-            {
-              url: "https://fullcalendar.io/api/demo-feeds/events.json",
-              name: "Demo",
-            },
-            // CalDav calendar
-            /*{
-              url: "https://...",
-              format: "caldav",
-              name: "Custom CalDav"
-            }*/
-          ],
-
-          // add multiCol and yearView to toolbar
-          headerToolbar: {
-            center: "title",
-            left: "prev,next today",
-            right:
-              "addCalDav multiCol,yearView listWeek,timeGridWeek,dayGridWeek,dayGridMonth,multiMonthYear",
-          },
-
-          // default settings
-          displayEventEnd: false,
-          eventTimeFormat: {
-            hour: "2-digit",
-            hour12: false,
-            minute: "2-digit",
-            meridiem: false,
-          },
-          weekNumbers: true,
-
-          // custom test settings
-          customButtons: {
-            addCalDav: {
-              text: "+CalDav",
-              click: function () {
-                const url = prompt("Please enter a CalDav URL.");
-                if (url) {
-                  cal.addEventSource({ url, format: "caldav" });
-                }
-              },
-            },
-          },
-          eventContent(arg) {
-            return {
-              html:
-                '<div style="display:inline-block;overflow:hidden;width:100%;"><b>' +
-                arg.timeText +
-                "</b> " +
-                arg.event.title +
-                (arg.event.extendedProps?.location
-                  ? ' <i style="display:inline-block;float:right">' +
-                    arg.event.extendedProps?.location +
-                    "</i>"
-                  : "") +
-                "</div>",
-            };
-          },
-          events: [
-            {
-              start: new Date().setUTCHours(10, 0, 0, 0),
-              end: new Date().setUTCHours(12, 0, 0, 0),
-              title: "Test event",
-              color: "orange",
-            },
-            {
-              start: new Date().setUTCDate(new Date().getUTCDate() + 3),
-              end: new Date().setUTCDate(new Date().getUTCDate() + 4),
-              display: "background",
-              color: "#ff9f89",
-            },
-            {
-              start: new Date().setUTCDate(new Date().getUTCDate() + 7),
-              end: new Date().setUTCDate(new Date().getUTCDate() + 10),
-              overlap: false,
-              display: "background",
-            },
-          ],
-        }
-      );
-      cal.render();
-    </script>
-  </body>
 </html>
