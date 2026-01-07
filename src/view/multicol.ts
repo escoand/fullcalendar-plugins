@@ -2,7 +2,7 @@ import { createPlugin, SpecificViewContentArg } from "@fullcalendar/core";
 import {
   sliceEventStore,
   TableDateCell,
-  ViewContext
+  ViewContext,
 } from "@fullcalendar/core/internal";
 import { ComponentChild, createElement } from "@fullcalendar/core/preact";
 import "core-js/stable";
@@ -103,7 +103,12 @@ class MultiColumnComponent extends InteractiveDateComponent {
         createElement(
           "thead",
           {},
-          createElement("tr", {}, showDayHeaders ? [null] : [], headers)
+          createElement(
+            "tr",
+            {},
+            showDayHeaders ? [createElement("div", {})] : [],
+            headers
+          )
         ),
         createElement("tbody", {}, rows)
       ),
