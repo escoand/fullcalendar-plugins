@@ -7,7 +7,6 @@ Multiple https://fullcalendar.io plugins useable with just static HTML and JavaS
 ### CalDav plugin
 
 Adds the ability to use CalDav URLs as `eventSource`.
-With version 1.3 write support was added.
 
 #### OAuth2 authentication
 

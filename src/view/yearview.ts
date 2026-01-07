@@ -1,112 +1,114 @@
-import { createPlugin } from "@fullcalendar/core";
 import {
-  BaseComponent,
+  createPlugin,
+  formatDate,
+  SpecificViewContentArg,
+} from "@fullcalendar/core";
+import {
   sliceEventStore,
   TableDateCell,
   ViewContext,
 } from "@fullcalendar/core/internal";
-import { ComponentChild, h } from "@fullcalendar/core/preact";
+import { ComponentChild, createElement } from "@fullcalendar/core/preact";
 import "core-js/stable";
 import {
-  BackgroundEventComponent,
   DEFAULT_DATE_FORMATTER,
   DEFAULT_MONTH_FORMAT,
   EventListCellComponent,
-  ExtendedViewProps,
-  getFullDayRange
+  getFullDayRange,
+  InteractiveDateComponent,
 } from "./common";
 // @ts-expect-error
 import css from "./yearview.css";
 
-const DEFAULT_MONTH_COUNT = 12;
-
-class YearComponent extends BaseComponent {
+class YearComponent extends InteractiveDateComponent {
   render(
-    props: ExtendedViewProps,
-    state: Readonly<{}>,
+    props: SpecificViewContentArg,
+    state: Readonly<any>,
     context: ViewContext
   ): ComponentChild {
     const dayHeaderFormat =
       context.viewApi.getOption("dayHeaderFormat") || DEFAULT_DATE_FORMATTER;
     const todayRange = getFullDayRange();
-    const firstDays = Array.from(
-      Array(
-        context.options.duration?.years * 12 ||
-          context.options.duration?.months ||
-          DEFAULT_MONTH_COUNT
-      ).keys()
-    ).map((month) => {
-      const date = new Date(props.dateProfile.renderRange.start);
-      date.setUTCMonth(date.getMonth() + month, 1);
-      return date;
-    });
+    const firstDateOfMonths: Date[] = [];
+    let date: Date;
+    for (
+      date = new Date(props.dateProfile.renderRange.start);
+      date < props.dateProfile.renderRange.end;
+      date.setUTCMonth(date.getMonth() + 1)
+    ) {
+      date.setUTCDate(1);
+      firstDateOfMonths.push(new Date(date));
+    }
 
     // columns
-    const cols = firstDays.map(() => [
-      h("col", { class: "fc-day-col" }),
-      h("col", {}),
+    const cols = firstDateOfMonths.map(() => [
+      createElement("col", { class: "fc-day-col" }),
+      createElement("col", {}),
     ]);
 
     // headers
-    const headers = firstDays.map((firstDay) => {
-      return h(
+    const headers = firstDateOfMonths.map((firstDay) => {
+      return createElement(
         "th",
         { class: "fc-col-header-cell", colSpan: 2 },
-        context.calendarApi.formatDate(firstDay, DEFAULT_MONTH_FORMAT)
+        formatDate(firstDay, DEFAULT_MONTH_FORMAT)
       );
     });
 
     // day cells
     const cells = Array.from(Array(37).keys()).map((date) =>
-      h(
+      createElement(
         "tr",
         {},
-        firstDays.map((firstDay) => {
-          const offset = (firstDay.getUTCDay() + 6) % 7;
-          const thisDay = getFullDayRange(firstDay, date - offset);
+        firstDateOfMonths.map((firstDate) => {
+          const offset = (firstDate.getUTCDay() + 6) % 7;
+          const thisDayRange = getFullDayRange(firstDate, date - offset);
 
           // offset
-          if (firstDay.getUTCMonth() != thisDay.start.getUTCMonth()) {
-            return h("td", { class: "fc-day-empty", colSpan: 2 });
+          if (firstDate.getUTCMonth() != thisDayRange.start.getUTCMonth()) {
+            return createElement("td", { class: "fc-day-empty", colSpan: 2 });
           }
 
           const events = sliceEventStore(
             props.eventStore,
             props.eventUiBases,
-            thisDay,
+            thisDayRange,
             props.nextDayThreshold
           );
           return [
-            h(TableDateCell, {
+            createElement(TableDateCell, {
               dayHeaderFormat,
-              date: thisDay.start,
+              date: thisDayRange.start,
               dateProfile: props.dateProfile,
               todayRange,
               colCnt: 0,
             }),
-            h(
-              EventListCellComponent,
-              {
-                context,
-                date: thisDay.start,
-                events: events.fg,
-              },
-              h(BackgroundEventComponent, { events: events.bg })
-            ),
+            createElement(EventListCellComponent, {
+              bgEvents: events.bg,
+              context,
+              date: firstDate,
+              dateProfile: props.dateProfile,
+              fgEvents: events.fg,
+              dateSelection: props.dateSelection,
+              eventSelection: props.eventSelection,
+              eventDrag: props.eventDrag,
+              eventResize: props.eventResize,
+              todayRange,
+            }),
           ];
         })
       )
     );
 
     return [
-      h("style", {}, css),
-      h(
+      createElement(
         "table",
         { class: "fc-scrollgrid fc-yearview" },
-        h("colgroup", {}, cols),
-        h("thead", {}, h("tr", {}, headers)),
-        h("tbody", {}, cells)
+        createElement("colgroup", {}, cols),
+        createElement("thead", {}, createElement("tr", {}, headers)),
+        createElement("tbody", {}, cells)
       ),
+      createElement("style", {}, css),
     ];
   }
 }
@@ -116,6 +118,7 @@ export default createPlugin({
   initialView: "yearView",
   views: {
     yearView: {
+      dateAlignment: "year",
       component: YearComponent,
       duration: { years: 1 },
     },

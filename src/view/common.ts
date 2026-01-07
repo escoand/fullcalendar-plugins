@@ -1,19 +1,23 @@
-import { Duration, EventRenderRange, FormatterInput } from "@fullcalendar/core";
+import { EventRenderRange, FormatDateOptions } from "@fullcalendar/core";
 import {
   BgEvent,
+  DateComponent,
   DateProfile,
   DateRange,
+  DateSpan,
+  DayCellContainer,
+  EventInteractionState,
   Seg,
   StandardEvent,
   ViewContext,
-  ViewProps,
   createFormatter,
   getDateMeta,
   getDayClassNames,
+  getSegMeta,
 } from "@fullcalendar/core/internal";
-import { h } from "@fullcalendar/core/preact";
+import { createElement } from "@fullcalendar/core/preact";
 
-export const DEFAULT_MONTH_FORMAT: FormatterInput = {
+export const DEFAULT_MONTH_FORMAT: FormatDateOptions = {
   month: "long",
 };
 
@@ -30,39 +34,42 @@ const DEFAULT_TIME_FORMATTER = createFormatter({
   meridiem: "narrow",
 });
 
-export interface ExtendedViewProps extends ViewProps {
-  dateProfile: DateProfile;
-  nextDayThreshold: Duration;
-}
-
-interface BaseProps {
-  children?: [];
-}
-
-interface EventListProps extends BaseProps {
+interface EventListProps {
+  bgEvents: EventRenderRange[];
   context: ViewContext;
   date: Date;
-  events: EventRenderRange[];
+  dateProfile: DateProfile;
+  dateSelection: DateSpan | null;
+  eventSelection: string;
+  eventDrag: EventInteractionState | null;
+  eventResize: EventInteractionState | null;
+  fgEvents: EventRenderRange[];
+  todayRange: DateRange;
 }
 
-interface EventProps {
-  context: ViewContext;
-  event: EventRenderRange;
+interface ForegroundEventProps {
+  eventRange: EventRenderRange;
+  isDateSelecting: boolean;
+  isDragging: boolean;
+  isResizing: boolean;
+  isSelected: boolean;
+  todayRange: DateRange;
 }
 interface BackgroundEventProps {
-  events?: EventRenderRange[];
+  eventRange: EventRenderRange;
+  todayRange: DateRange;
 }
 
-function createProps(event: EventRenderRange) {
-  const today = getFullDayRange();
-  const meta = getDateMeta(event.instance?.range.start, today);
+function getEventProps(eventRange: EventRenderRange, todayRange: DateRange) {
+  const seg: Seg = {
+    eventRange,
+    isEnd: eventRange?.instance?.range.end <= todayRange.end,
+    isStart: eventRange?.instance?.range.start >= todayRange.start,
+  };
+  const segMeta = getSegMeta(seg, todayRange);
   return {
-    ...meta,
-    seg: {
-      isStart: event.instance?.range.start >= today.start,
-      isEnd: event.instance?.range.end <= today.end,
-      eventRange: event,
-    } as Seg,
+    ...segMeta,
+    seg,
   };
 }
 
@@ -75,38 +82,80 @@ export function getFullDayRange(date?: Date, offset?: number): DateRange {
   return { start, end };
 }
 
+export abstract class InteractiveDateComponent extends DateComponent {
+  private rootEl?: HTMLElement;
+
+  componentDidMount(): void {
+    if (!this.rootEl) {
+      this.rootEl = this.base as HTMLElement;
+    }
+    this.context.registerInteractiveComponent(this, { el: this.rootEl });
+  }
+
+  componentWillUnmount(): void {
+    if (this.rootEl) {
+      this.context.unregisterInteractiveComponent(this);
+      this.rootEl = undefined;
+    }
+  }
+}
+
 export function EventListCellComponent(props: EventListProps) {
-  const { children, context, date, events } = props;
-  const meta = getDateMeta(date, getFullDayRange());
-  return h(
-    "td",
-    {
-      class: getDayClassNames(meta, context.theme)
-        .concat(["fc-events"])
-        .join(" "),
-    },
-    events.map((event) => h(EventComponent, { context, event })),
-    children
+  const meta = getDateMeta(
+    props.date,
+    props.todayRange,
+    props.dateProfile.currentDate,
+    props.dateProfile
   );
+  return createElement(DayCellContainer, {
+    ...props,
+    elClasses: getDayClassNames(meta, props.context.theme).concat([
+      "fc-events",
+    ]),
+    elTag: "td",
+    todayRange: props.todayRange,
+    children: (InnerContent, renderProps) => [
+      props.fgEvents.map((eventRange) =>
+        createElement(
+          ForegroundEventComponent,
+          {
+            eventRange,
+            isDateSelecting: false,
+            isDragging: Boolean(props.eventDrag),
+            isResizing: Boolean(props.eventResize),
+            isSelected: Boolean(props.eventSelection),
+            todayRange: props.todayRange,
+          },
+          InnerContent
+        )
+      ),
+      props.bgEvents.map((eventRange) =>
+        createElement(BackgroundEventComponent, {
+          eventRange,
+          todayRange: props.todayRange,
+        })
+      ),
+    ],
+  });
 }
 
-export function BackgroundEventComponent(props: BackgroundEventProps) {
-  const { events } = props;
-  if (!events || events.length === 0) return;
-  const childProps = createProps(events[0]);
-  return h(BgEvent, childProps);
+function BackgroundEventComponent(props: BackgroundEventProps) {
+  const eventProps = getEventProps(props.eventRange, props.todayRange);
+  return createElement(BgEvent, {
+    ...eventProps,
+  });
 }
 
-export function EventComponent(props: EventProps) {
-  const { event } = props;
-  const childProps = createProps(event);
-  return h(StandardEvent, {
-    ...childProps,
+function ForegroundEventComponent(props: ForegroundEventProps) {
+  const eventProps = getEventProps(props.eventRange, props.todayRange);
+  return createElement(StandardEvent, {
+    ...eventProps,
     defaultTimeFormat: DEFAULT_TIME_FORMATTER,
+    disableResizing: true,
     elClasses: ["fc-h-event"],
-    isDragging: false,
-    isResizing: false,
-    isDateSelecting: false,
-    isSelected: false,
+    isDateSelecting: props.isDateSelecting,
+    isDragging: props.isDragging,
+    isResizing: props.isResizing,
+    isSelected: props.isSelected,
   });
 }

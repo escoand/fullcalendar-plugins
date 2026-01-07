@@ -62,26 +62,26 @@ const createEvent = (icsText: string, range: DateRange): EventInput => {
     skipInvalidDates: true,
   });
   const results = expandICalEvents(expander, range);
-  results.forEach((result: EventInput, idx) => {
-    result.id = expander.events[idx].uid;
+  results.forEach((result: EventInput) => {
+    result.id = expander.events[0].uid;
     if (!result.extendedProps) result.extendedProps = {};
     result.extendedProps.attendees = Object.fromEntries(
-      expander.events[idx].attendees.map((_) => [
+      expander.events[0].attendees.map((_) => [
         _.getFirstValue(),
         _.getFirstParameter("partstat"),
       ])
     );
     result.extendedProps.categories =
-      expander.events[idx].component
+      expander.events[0].component
         .getFirstProperty("categories")
         ?.jCal.slice(3) || [];
     result.extendedProps.status =
-      expander.events[idx].component.getFirstPropertyValue("status");
-    if (expander.events[idx].color) {
-      result.color = expander.events[idx].color;
+      expander.events[0].component.getFirstPropertyValue("status");
+    if (expander.events[0].color) {
+      result.color = expander.events[0].color;
     }
-    if (expander.events[idx].description?.search(httpUrl) >= 0) {
-      result.url = expander.events[idx].description?.match(httpUrl)?.[0];
+    if (expander.events[0].description?.search(httpUrl) >= 0) {
+      result.url = expander.events[0].description?.match(httpUrl)?.[0];
     }
   });
   return results;

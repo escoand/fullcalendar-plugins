@@ -1,26 +1,24 @@
-import { createPlugin } from "@fullcalendar/core";
+import { createPlugin, SpecificViewContentArg } from "@fullcalendar/core";
 import {
-  BaseComponent,
   sliceEventStore,
   TableDateCell,
-  ViewContext,
+  ViewContext
 } from "@fullcalendar/core/internal";
-import { ComponentChild, h } from "@fullcalendar/core/preact";
+import { ComponentChild, createElement } from "@fullcalendar/core/preact";
 import "core-js/stable";
 import {
-  BackgroundEventComponent,
   DEFAULT_DATE_FORMATTER,
   EventListCellComponent,
-  ExtendedViewProps,
   getFullDayRange,
+  InteractiveDateComponent,
 } from "./common";
 // @ts-expect-error
 import css from "./multicol.css";
 
-class MultiColumnComponent extends BaseComponent {
+class MultiColumnComponent extends InteractiveDateComponent {
   render(
-    props: ExtendedViewProps,
-    state: Readonly<{}>,
+    props: SpecificViewContentArg,
+    state: Readonly<any>,
     context: ViewContext
   ): ComponentChild {
     const showDayHeaders = context.viewApi.getOption("dayHeaders");
@@ -32,23 +30,23 @@ class MultiColumnComponent extends BaseComponent {
     ).filter((source) => source?.ui.display != "background");
 
     // cols
-    const cols = showDayHeaders ? [h("col", { class: "fc-day-col" })] : [];
-    fgSources.forEach(() => cols.push(h("col", {})));
+    const cols = showDayHeaders
+      ? [createElement("col", { class: "fc-day-col" })]
+      : [];
+    fgSources.forEach(() => cols.push(createElement("col", {})));
 
     // headers
-    const headers = (showDayHeaders ? [null] : [])
-      .concat(fgSources)
-      .map((source) =>
-        h(
-          "th",
-          { class: "fc-col-header-cell fc-day", role: "columnheader" },
-          h(
-            "div",
-            { class: "fc-scrollgrid-sync-inner" },
-            source?.extendedProps.name || ""
-          )
+    const headers = fgSources.map((source) =>
+      createElement(
+        "th",
+        { class: "fc-col-header-cell fc-day", role: "columnheader" },
+        createElement(
+          "div",
+          { class: "fc-scrollgrid-sync-inner" },
+          source?.extendedProps.name || ""
         )
-      );
+      )
+    );
 
     // day rows
     const rows = [];
@@ -63,11 +61,11 @@ class MultiColumnComponent extends BaseComponent {
       );
 
       rows.push(
-        h(
+        createElement(
           "tr",
           { class: "fc-multicol-row" },
           showDayHeaders &&
-            h(TableDateCell, {
+            createElement(TableDateCell, {
               dayHeaderFormat,
               date: thisDay.start,
               dateProfile: props.dateProfile,
@@ -76,17 +74,20 @@ class MultiColumnComponent extends BaseComponent {
               extraRenderProps: { class: "extra" },
             }),
           fgSources.map((source) =>
-            h(
-              EventListCellComponent,
-              {
-                context,
-                date: thisDay.start,
-                events: events.fg.filter(
-                  (event) => event.def.sourceId == source.sourceId
-                ),
-              },
-              h(BackgroundEventComponent, { events: events.bg })
-            )
+            createElement(EventListCellComponent, {
+              bgEvents: events.bg,
+              context,
+              date: thisDay.start,
+              dateProfile: props.dateProfile,
+              fgEvents: events.fg.filter(
+                (event) => event.def.sourceId == source.sourceId
+              ),
+              dateSelection: props.dateSelection,
+              eventSelection: props.eventSelection,
+              eventDrag: props.eventDrag,
+              eventResize: props.eventResize,
+              todayRange,
+            })
           )
         )
       );
@@ -95,14 +96,18 @@ class MultiColumnComponent extends BaseComponent {
     }
 
     return [
-      h("style", {}, css),
-      h(
+      createElement(
         "table",
         { class: "fc-scrollgrid fc-multicol" },
-        h("colgroup", {}, cols),
-        h("thead", {}, h("tr", {}, headers)),
-        h("tbody", {}, rows)
+        createElement("colgroup", {}, cols),
+        createElement(
+          "thead",
+          {},
+          createElement("tr", {}, showDayHeaders ? [null] : [], headers)
+        ),
+        createElement("tbody", {}, rows)
       ),
+      createElement("style", {}, css),
     ];
   }
 }
