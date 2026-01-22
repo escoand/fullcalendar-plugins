@@ -39,3 +39,6 @@
 .fc-multicol .fc-event-location {
   display: inline-block;
 }
+.fc.fc-hide-empty .fc-multicol tbody tr:not(:has(.fc-event)) {
+  display: none;
+}

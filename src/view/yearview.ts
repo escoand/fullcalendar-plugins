@@ -86,7 +86,7 @@ class YearComponent extends InteractiveDateComponent {
             createElement(EventListCellComponent, {
               bgEvents: events.bg,
               context,
-              date: firstDate,
+              date: thisDayRange.start,
               dateProfile: props.dateProfile,
               fgEvents: events.fg,
               dateSelection: props.dateSelection,

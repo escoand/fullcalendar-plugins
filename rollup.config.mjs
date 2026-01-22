@@ -45,5 +45,6 @@ export default [
   createOutput("src/source/caldav.ts", "CalDavPlugin"),
   createOutput("src/view/loading.ts", "LoadingPlugin"),
   createOutput("src/view/multicol.ts", "MultiColumnPlugin"),
+  createOutput("src/view/switcher.ts", "SwitcherPlugin"),
   createOutput("src/view/yearview.ts", "YearViewPlugin"),
 ];

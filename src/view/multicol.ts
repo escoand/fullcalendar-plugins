@@ -27,7 +27,7 @@ class MultiColumnComponent extends InteractiveDateComponent {
     const todayRange = getFullDayRange();
     const fgSources = Object.values(
       context.calendarApi.getCurrentData().eventSources
-    ).filter((source) => source?.ui.display != "background");
+    ).filter((source) => !["background", "none"].includes(source?.ui.display));
 
     // cols
     const cols = showDayHeaders
@@ -106,7 +106,7 @@ class MultiColumnComponent extends InteractiveDateComponent {
           createElement(
             "tr",
             {},
-            showDayHeaders ? [createElement("div", {})] : [],
+            showDayHeaders && [createElement("th", {})],
             headers
           )
         ),

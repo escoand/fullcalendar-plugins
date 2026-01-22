@@ -1,0 +1,26 @@
+.fc .fc-switcher {
+  background: rgba(0, 0, 0, 0.5);
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  z-index: 2;
+}
+.fc .fc-switcher > div {
+  background: white;
+  border-radius: 4px;
+  max-width: 300px;
+  padding: 10px;
+  margin: 10% auto;
+}
+.fc .fc-switcher h4 {
+  margin: 5px;
+}
+.fc .fc-switcher label {
+  display: block;
+}
+.fc .fc-switcher .buttons {
+  margin-top: 10px;
+  text-align: right;
+}
