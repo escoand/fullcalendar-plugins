@@ -24,10 +24,13 @@ class YearComponent extends InteractiveDateComponent {
   render(
     props: SpecificViewContentArg,
     state: Readonly<any>,
-    context: ViewContext
+    context: ViewContext,
   ): ComponentChild {
     const dayHeaderFormat =
       context.viewApi.getOption("dayHeaderFormat") || DEFAULT_DATE_FORMATTER;
+    const weekdayAlign =
+      context.viewApi.getOption("weekdayAlign") ||
+      context.calendarApi.getOption("weekdayAlign");
     const todayRange = getFullDayRange();
     const firstDateOfMonths: Date[] = [];
     let date: Date;
@@ -51,7 +54,7 @@ class YearComponent extends InteractiveDateComponent {
       return createElement(
         "th",
         { class: "fc-col-header-cell", colSpan: 2 },
-        formatDate(firstDay, DEFAULT_MONTH_FORMAT)
+        formatDate(firstDay, DEFAULT_MONTH_FORMAT),
       );
     });
 
@@ -61,7 +64,7 @@ class YearComponent extends InteractiveDateComponent {
         "tr",
         {},
         firstDateOfMonths.map((firstDate) => {
-          const offset = (firstDate.getUTCDay() + 6) % 7;
+          const offset = weekdayAlign ? (firstDate.getUTCDay() + 6) % 7 : 0;
           const thisDayRange = getFullDayRange(firstDate, date - offset);
 
           // offset
@@ -73,7 +76,7 @@ class YearComponent extends InteractiveDateComponent {
             props.eventStore,
             props.eventUiBases,
             thisDayRange,
-            props.nextDayThreshold
+            props.nextDayThreshold,
           );
           return [
             createElement(TableDateCell, {
@@ -96,8 +99,8 @@ class YearComponent extends InteractiveDateComponent {
               todayRange,
             }),
           ];
-        })
-      )
+        }),
+      ),
     );
 
     return [
@@ -106,7 +109,7 @@ class YearComponent extends InteractiveDateComponent {
         { class: "fc-scrollgrid fc-yearview" },
         createElement("colgroup", {}, cols),
         createElement("thead", {}, createElement("tr", {}, headers)),
-        createElement("tbody", {}, cells)
+        createElement("tbody", {}, cells),
       ),
       createElement("style", {}, css),
     ];
