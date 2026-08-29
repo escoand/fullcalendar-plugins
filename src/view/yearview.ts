@@ -109,6 +109,7 @@ class YearComponent extends InteractiveDateComponent {
         createElement("tbody", {}, cells),
       ),
       createElement("style", {}, css),
+      context.options,
     ];
   }
 }
