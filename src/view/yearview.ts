@@ -1,6 +1,5 @@
 import {
   createPlugin,
-  formatDate,
   SpecificViewContentArg,
 } from "@fullcalendar/core";
 import {
@@ -48,7 +47,7 @@ class YearComponent extends InteractiveDateComponent {
       return createElement(
         "th",
         { class: "fc-col-header-cell", colSpan: 2 },
-        formatDate(firstDay, DEFAULT_MONTH_FORMAT),
+        context.calendarApi.formatDate(firstDay, DEFAULT_MONTH_FORMAT),
       );
     });
 
