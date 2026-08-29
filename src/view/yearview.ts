@@ -47,7 +47,7 @@ class YearComponent extends InteractiveDateComponent {
       return createElement(
         "th",
         { class: "fc-col-header-cell", colSpan: 2 },
-        context.calendarApi.formatDate(firstDay, DEFAULT_MONTH_FORMAT),
+        context.dateEnv.format(firstDay, DEFAULT_MONTH_FORMAT),
       );
     });
 
