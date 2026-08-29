@@ -115,25 +115,33 @@ export function EventListCellComponent(props: EventListProps) {
     elTag: "td",
     todayRange: props.todayRange,
     children: (InnerContent, renderProps) => [
-      props.fgEvents.map((eventRange) =>
-        createElement(
-          ForegroundEventComponent,
-          {
+      createElement(
+        "div",
+        { class: "fc-events-bg" },
+        props.bgEvents.map((eventRange) =>
+          createElement(BackgroundEventComponent, {
             eventRange,
-            isDateSelecting: false,
-            isDragging: Boolean(props.eventDrag),
-            isResizing: Boolean(props.eventResize),
-            isSelected: Boolean(props.eventSelection),
             todayRange: props.todayRange,
-          },
-          InnerContent
+          })
         )
       ),
-      props.bgEvents.map((eventRange) =>
-        createElement(BackgroundEventComponent, {
-          eventRange,
-          todayRange: props.todayRange,
-        })
+      createElement(
+        "div",
+        { class: "fc-events-fg" },
+        props.fgEvents.map((eventRange) =>
+          createElement(
+            ForegroundEventComponent,
+            {
+              eventRange,
+              isDateSelecting: false,
+              isDragging: Boolean(props.eventDrag),
+              isResizing: Boolean(props.eventResize),
+              isSelected: Boolean(props.eventSelection),
+              todayRange: props.todayRange,
+            },
+            InnerContent
+          )
+        )
       ),
     ],
   });

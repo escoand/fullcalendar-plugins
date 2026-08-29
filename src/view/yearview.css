@@ -1,8 +1,19 @@
 .fc-yearview {
   border-collapse: collapse !important;
+  display: grid;
+  grid-template-columns: repeat(12, 40px minmax(clamp(80px, 7vw, 96px), 1fr));
+  min-width: clamp(1440px, calc(480px + 84vw), 1632px);
+  table-layout: auto !important;
+  width: 100% !important;
 }
-.fc-yearview .fc-day-col {
-  width: 40px;
+.fc-yearview thead,
+.fc-yearview tbody,
+.fc-yearview tr {
+  display: contents;
+}
+.fc-yearview thead th,
+.fc-yearview .fc-day-empty {
+  grid-column: span 2;
 }
 .fc-yearview th {
   overflow: hidden;
@@ -18,18 +29,33 @@
 .fc-yearview .fc-day-empty {
   border: none;
 }
+.fc-yearview .fc-day-sat,
+.fc-yearview .fc-day-sun {
+  background-color: var(
+    --fc-weekend-bg-color,
+    var(--fc-neutral-bg-color, rgba(208, 208, 208, 0.3))
+  );
+}
 .fc-yearview .fc-day-today {
   background-color: var(--fc-today-bg-color);
 }
 .fc-yearview .fc-events {
   border-left: none;
-  padding: 1px 2px 0 0;
+  padding: 1px 2px 0 2px;
   position: relative;
+}
+.fc-yearview .fc-events-bg {
+  inset: 0;
+  position: absolute;
+  z-index: 1;
+}
+.fc-yearview .fc-events-fg {
+  position: relative;
+  z-index: 2;
 }
 .fc-yearview .fc-event.fc-bg-event {
   border: none;
   margin: 0;
-  z-index: -1;
 }
 .fc-yearview .fc-h-event {
   border-radius: 3px;

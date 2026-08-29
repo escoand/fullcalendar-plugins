@@ -43,12 +43,6 @@ class YearComponent extends InteractiveDateComponent {
       firstDateOfMonths.push(new Date(date));
     }
 
-    // columns
-    const cols = firstDateOfMonths.map(() => [
-      createElement("col", { class: "fc-day-col" }),
-      createElement("col", {}),
-    ]);
-
     // headers
     const headers = firstDateOfMonths.map((firstDay) => {
       return createElement(
@@ -59,11 +53,10 @@ class YearComponent extends InteractiveDateComponent {
     });
 
     // day cells
-    const cells = Array.from(Array(37).keys()).map((date) =>
-      createElement(
-        "tr",
-        {},
-        firstDateOfMonths.map((firstDate) => {
+    const cells = [];
+    for (let date = 0; ; date++) {
+      let hasDays = false;
+      const rowCells = firstDateOfMonths.map((firstDate) => {
           const offset = weekdayAlign ? (firstDate.getUTCDay() + 6) % 7 : 0;
           const thisDayRange = getFullDayRange(firstDate, date - offset);
 
@@ -71,6 +64,7 @@ class YearComponent extends InteractiveDateComponent {
           if (firstDate.getUTCMonth() != thisDayRange.start.getUTCMonth()) {
             return createElement("td", { class: "fc-day-empty", colSpan: 2 });
           }
+          hasDays = true;
 
           const events = sliceEventStore(
             props.eventStore,
@@ -99,15 +93,19 @@ class YearComponent extends InteractiveDateComponent {
               todayRange,
             }),
           ];
-        }),
-      ),
-    );
+      });
+
+      if (!hasDays) {
+        break;
+      }
+
+      cells.push(createElement("tr", {}, rowCells));
+    }
 
     return [
       createElement(
         "table",
         { class: "fc-scrollgrid fc-yearview" },
-        createElement("colgroup", {}, cols),
         createElement("thead", {}, createElement("tr", {}, headers)),
         createElement("tbody", {}, cells),
       ),
