@@ -1,8 +1,6 @@
 .fc-yearview {
   border-collapse: collapse !important;
   display: grid;
-  grid-template-columns: repeat(12, 40px minmax(clamp(80px, 7vw, 96px), 1fr));
-  min-width: clamp(1440px, calc(480px + 84vw), 1632px);
   table-layout: auto !important;
   width: 100% !important;
 }

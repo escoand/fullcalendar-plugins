@@ -3,6 +3,7 @@ import {
   sliceEventStore,
   TableDateCell,
   ViewContext,
+  ViewOptionsRefined,
 } from "@fullcalendar/core/internal";
 import { ComponentChild, createElement } from "@fullcalendar/core/preact";
 import "core-js/stable";
@@ -15,22 +16,31 @@ import {
 // @ts-expect-error
 import css from "./multicol.css";
 
+const MultiColumnRefined = {
+  dayHeaders: Boolean,
+};
+
+type MultiColumnContext = ViewContext & {
+  options: ViewOptionsRefined & {
+    dayHeaders: Boolean;
+  };
+};
+
 class MultiColumnComponent extends InteractiveDateComponent {
   render(
     props: SpecificViewContentArg,
     state: Readonly<any>,
-    context: ViewContext
+    context: MultiColumnContext,
   ): ComponentChild {
-    const showDayHeaders = context.viewApi.getOption("dayHeaders");
     const dayHeaderFormat =
-      context.viewApi.getOption("dayHeaderFormat") || DEFAULT_DATE_FORMATTER;
+      context.options.dayHeaderFormat || DEFAULT_DATE_FORMATTER;
     const todayRange = getFullDayRange();
     const fgSources = Object.values(
-      context.calendarApi.getCurrentData().eventSources
+      context.calendarApi.getCurrentData().eventSources,
     ).filter((source) => !["background", "none"].includes(source?.ui.display));
 
     // cols
-    const cols = showDayHeaders
+    const cols = context.options.dayHeaders
       ? [createElement("col", { class: "fc-day-col" })]
       : [];
     fgSources.forEach(() => cols.push(createElement("col", {})));
@@ -43,9 +53,9 @@ class MultiColumnComponent extends InteractiveDateComponent {
         createElement(
           "div",
           { class: "fc-scrollgrid-sync-inner" },
-          source?.extendedProps.name || ""
-        )
-      )
+          source?.extendedProps.name || "",
+        ),
+      ),
     );
 
     // day rows
@@ -57,14 +67,14 @@ class MultiColumnComponent extends InteractiveDateComponent {
         props.eventStore,
         props.eventUiBases,
         thisDay,
-        props.nextDayThreshold
+        props.nextDayThreshold,
       );
 
       rows.push(
         createElement(
           "tr",
           { class: "fc-multicol-row" },
-          showDayHeaders &&
+          context.options.dayHeaders &&
             createElement(TableDateCell, {
               dayHeaderFormat,
               date: thisDay.start,
@@ -80,16 +90,16 @@ class MultiColumnComponent extends InteractiveDateComponent {
               date: thisDay.start,
               dateProfile: props.dateProfile,
               fgEvents: events.fg.filter(
-                (event) => event.def.sourceId == source.sourceId
+                (event) => event.def.sourceId == source.sourceId,
               ),
               dateSelection: props.dateSelection,
               eventSelection: props.eventSelection,
               eventDrag: props.eventDrag,
               eventResize: props.eventResize,
               todayRange,
-            })
-          )
-        )
+            }),
+          ),
+        ),
       );
 
       date.setUTCDate(date.getUTCDate() + 1);
@@ -106,11 +116,11 @@ class MultiColumnComponent extends InteractiveDateComponent {
           createElement(
             "tr",
             {},
-            showDayHeaders && [createElement("th", {})],
-            headers
-          )
+            context.options.dayHeaders && [createElement("th", {})],
+            headers,
+          ),
         ),
-        createElement("tbody", {}, rows)
+        createElement("tbody", {}, rows),
       ),
       createElement("style", {}, css),
     ];
@@ -120,6 +130,7 @@ class MultiColumnComponent extends InteractiveDateComponent {
 export default createPlugin({
   name: "MultiColumnView",
   initialView: "multiCol",
+  optionRefiners: MultiColumnRefined,
   views: {
     multiCol: {
       component: MultiColumnComponent,

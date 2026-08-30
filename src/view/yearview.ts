@@ -1,12 +1,9 @@
-import {
-  createPlugin,
-  formatDate,
-  SpecificViewContentArg,
-} from "@fullcalendar/core";
+import { createPlugin, SpecificViewContentArg } from "@fullcalendar/core";
 import {
   sliceEventStore,
   TableDateCell,
   ViewContext,
+  ViewOptionsRefined,
 } from "@fullcalendar/core/internal";
 import { ComponentChild, createElement } from "@fullcalendar/core/preact";
 import "core-js/stable";
@@ -20,17 +17,22 @@ import {
 // @ts-expect-error
 import css from "./yearview.css";
 
+const YearViewRefined = { weekdayAlign: Boolean };
+
+type YearViewContext = ViewContext & {
+  options: ViewOptionsRefined & {
+    weekdayAlign: Boolean;
+  };
+};
+
 class YearComponent extends InteractiveDateComponent {
   render(
     props: SpecificViewContentArg,
     state: Readonly<any>,
-    context: ViewContext,
+    context: YearViewContext,
   ): ComponentChild {
     const dayHeaderFormat =
-      context.viewApi.getOption("dayHeaderFormat") || DEFAULT_DATE_FORMATTER;
-    const weekdayAlign =
-      context.viewApi.getOption("weekdayAlign") ||
-      context.calendarApi.getOption("weekdayAlign");
+      context.options.dayHeaderFormat || DEFAULT_DATE_FORMATTER;
     const todayRange = getFullDayRange();
     const firstDateOfMonths: Date[] = [];
     let date: Date;
@@ -48,7 +50,7 @@ class YearComponent extends InteractiveDateComponent {
       return createElement(
         "th",
         { class: "fc-col-header-cell", colSpan: 2 },
-        formatDate(firstDay, DEFAULT_MONTH_FORMAT),
+        context.calendarApi.formatDate(firstDay, DEFAULT_MONTH_FORMAT),
       );
     });
 
@@ -57,55 +59,63 @@ class YearComponent extends InteractiveDateComponent {
     for (let date = 0; ; date++) {
       let hasDays = false;
       const rowCells = firstDateOfMonths.map((firstDate) => {
-          const offset = weekdayAlign ? (firstDate.getUTCDay() + 6) % 7 : 0;
-          const thisDayRange = getFullDayRange(firstDate, date - offset);
+        const offset = context.options.weekdayAlign
+          ? (firstDate.getUTCDay() + 6) % 7
+          : 0;
+        const thisDayRange = getFullDayRange(firstDate, date - offset);
 
-          // offset
-          if (firstDate.getUTCMonth() != thisDayRange.start.getUTCMonth()) {
-            return createElement("td", { class: "fc-day-empty", colSpan: 2 });
-          }
-          hasDays = true;
+        // offset
+        if (firstDate.getUTCMonth() != thisDayRange.start.getUTCMonth()) {
+          return createElement("td", { class: "fc-day-empty", colSpan: 2 });
+        }
+        hasDays = true;
 
-          const events = sliceEventStore(
-            props.eventStore,
-            props.eventUiBases,
-            thisDayRange,
-            props.nextDayThreshold,
-          );
-          return [
-            createElement(TableDateCell, {
-              dayHeaderFormat,
-              date: thisDayRange.start,
-              dateProfile: props.dateProfile,
-              todayRange,
-              colCnt: 0,
-            }),
-            createElement(EventListCellComponent, {
-              bgEvents: events.bg,
-              context,
-              date: thisDayRange.start,
-              dateProfile: props.dateProfile,
-              fgEvents: events.fg,
-              dateSelection: props.dateSelection,
-              eventSelection: props.eventSelection,
-              eventDrag: props.eventDrag,
-              eventResize: props.eventResize,
-              todayRange,
-            }),
-          ];
+        const events = sliceEventStore(
+          props.eventStore,
+          props.eventUiBases,
+          thisDayRange,
+          props.nextDayThreshold,
+        );
+        return [
+          createElement(TableDateCell, {
+            dayHeaderFormat,
+            date: thisDayRange.start,
+            dateProfile: props.dateProfile,
+            todayRange,
+            colCnt: 0,
+          }),
+          createElement(EventListCellComponent, {
+            bgEvents: events.bg,
+            context,
+            date: thisDayRange.start,
+            dateProfile: props.dateProfile,
+            fgEvents: events.fg,
+            dateSelection: props.dateSelection,
+            eventSelection: props.eventSelection,
+            eventDrag: props.eventDrag,
+            eventResize: props.eventResize,
+            todayRange,
+          }),
+        ];
       });
 
-      if (!hasDays) {
+      if (hasDays) {
+        cells.push(createElement("tr", {}, rowCells));
+      } else if (cells.length) {
         break;
       }
-
-      cells.push(createElement("tr", {}, rowCells));
     }
+
+    const monthCount = firstDateOfMonths.length;
+    const gridStyle = `grid-template-columns: repeat(${monthCount}, 40px minmax(clamp(80px, 7vw, 96px), 1fr));`;
 
     return [
       createElement(
         "table",
-        { class: "fc-scrollgrid fc-yearview" },
+        {
+          class: "fc-scrollgrid fc-yearview",
+          style: gridStyle,
+        },
         createElement("thead", {}, createElement("tr", {}, headers)),
         createElement("tbody", {}, cells),
       ),
@@ -117,10 +127,11 @@ class YearComponent extends InteractiveDateComponent {
 export default createPlugin({
   name: "YearView",
   initialView: "yearView",
+  optionRefiners: YearViewRefined,
   views: {
     yearView: {
-      dateAlignment: "year",
       component: YearComponent,
+      dateAlignment: "year",
       duration: { years: 1 },
     },
   },
