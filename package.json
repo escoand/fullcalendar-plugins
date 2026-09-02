@@ -2,9 +2,9 @@
   "name": "fullcalendar-plugins",
   "version": "1.2.2",
   "devDependencies": {
-    "@babel/core": "7.29.0",
-    "@babel/preset-env": "7.29.0",
-    "@babel/preset-typescript": "7.28.5",
+    "@babel/core": "8.0.1",
+    "@babel/preset-env": "8.0.2",
+    "@babel/preset-typescript": "8.0.1",
     "@fullcalendar/core": "6.1.20",
     "@fullcalendar/icalendar": "6.1.20",
     "@rollup/plugin-babel": "6.1.0",
